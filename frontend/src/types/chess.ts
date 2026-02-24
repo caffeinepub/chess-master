@@ -1,21 +1,16 @@
-// Core piece/board types (kept for backward compatibility with existing utils)
-export type Piece = string; // Unicode chess symbols
-export type Square = Piece | null;
-export type Board = Square[][];
 export type Player = 'white' | 'black';
+export type Square = string | null;
+export type Board = Square[][];
 
 export type GameMode = 'two-players' | 'one-player' | 'auto-play' | 'online';
+
 export type GameResult = 'white' | 'black' | 'draw' | null;
-export type DrawReason = 'stalemate' | 'threefold';
+
+export type DrawReason = 'stalemate' | 'threefold-repetition' | 'insufficient-material' | null;
 
 export interface Position {
   row: number;
   col: number;
-}
-
-export interface LastMove {
-  from: Position;
-  to: Position;
 }
 
 export interface CastlingRights {
@@ -29,14 +24,21 @@ export interface GameState {
   board: Board;
   currentPlayer: Player;
   selectedPiece: Position | null;
-  gameOver: GameResult;
-  drawReason?: DrawReason;
+  validMoves: Position[];
+  lastMove: { from: Position; to: Position } | null;
+  gameOver: boolean;
+  result: GameResult;
+  drawReason: DrawReason;
   isCheck: boolean;
-  lastMove: LastMove | null;
   castlingRights: CastlingRights;
-  // Online game fields
-  gameId?: string;
-  whitePlayer?: string;
-  blackPlayer?: string;
-  playerColor?: Player;
+  enPassantTarget: Position | null;
+  moveCount: number;
+}
+
+export interface PlayerStatsData {
+  points: number;
+  wins: number;
+  gamesPlayed: number;
+  draws: number;
+  losses: number;
 }

@@ -1,161 +1,139 @@
 import React, { useState } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useOnlineGame } from '../hooks/useOnlineGame';
-import { Copy, Check, Loader2, LogIn } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { useCreateGame, useJoinGame } from '../hooks/useOnlineGame';
+import { Copy, LogIn } from 'lucide-react';
 
 interface OnlineGameSetupProps {
-  onGameReady: (gameId: string, playerColor: 'white' | 'black') => void;
+  onGameReady: (gameId: string) => void;
 }
 
 function generateGameId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
 export default function OnlineGameSetup({ onGameReady }: OnlineGameSetupProps) {
   const { identity } = useInternetIdentity();
-  const [createdGameId, setCreatedGameId] = useState<string | null>(null);
+  const { createGameMutation } = useCreateGame();
+  const { joinGameMutation } = useJoinGame();
   const [joinId, setJoinId] = useState('');
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState('');
 
-  const { createGameMutation, joinGameMutation } = useOnlineGame(null);
-
-  const isAuthenticated = !!identity;
+  if (!identity) {
+    return (
+      <div className="flex flex-col items-center gap-4 p-6 bg-chess-panel rounded-xl text-chess-panel-fg">
+        <LogIn size={32} className="text-chess-accent" />
+        <p className="text-center text-sm">Please log in to play online multiplayer games.</p>
+      </div>
+    );
+  }
 
   const handleCreate = async () => {
-    setError('');
-    const newId = generateGameId();
+    const gameId = generateGameId();
     try {
-      await createGameMutation.mutateAsync(newId);
-      setCreatedGameId(newId);
-    } catch (e: unknown) {
-      const err = e as Error;
-      setError(err?.message || 'Failed to create game.');
+      await createGameMutation.mutateAsync({
+        gameId,
+        whitePlayer: identity.getPrincipal(),
+      });
+      setCreatedId(gameId);
+    } catch (e: any) {
+      console.error('Create game error:', e);
     }
   };
 
   const handleJoin = async () => {
-    setError('');
-    const id = joinId.trim().toUpperCase();
-    if (!id) {
-      setError('Please enter a game ID.');
-      return;
-    }
+    if (!joinId.trim()) return;
     try {
-      await joinGameMutation.mutateAsync(id);
-      onGameReady(id, 'black');
-    } catch (e: unknown) {
-      const err = e as Error;
-      setError(err?.message || 'Failed to join game.');
+      await joinGameMutation.mutateAsync(joinId.trim().toUpperCase());
+      onGameReady(joinId.trim().toUpperCase());
+    } catch (e: any) {
+      console.error('Join game error:', e);
     }
   };
 
   const handleCopy = () => {
-    if (createdGameId) {
-      navigator.clipboard.writeText(createdGameId);
+    if (createdId) {
+      navigator.clipboard.writeText(createdId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const handleStartWaiting = () => {
-    if (createdGameId) {
-      onGameReady(createdGameId, 'white');
-    }
+  const handleStartCreated = () => {
+    if (createdId) onGameReady(createdId);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center gap-4 p-8 rounded-xl border border-chess-gold/30 bg-chess-dark/60 max-w-sm mx-auto text-center">
-        <div className="text-4xl">🌐</div>
-        <h3 className="text-chess-gold font-playfair text-xl font-semibold">Online Multiplayer</h3>
-        <p className="text-chess-cream/70 text-sm">
-          You need to be logged in to play online. Please login with Internet Identity to create or join a game.
-        </p>
-        <div className="flex items-center gap-2 text-chess-gold/60 text-sm">
-          <LogIn size={16} />
-          <span>Login required</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-6 p-6 rounded-xl border border-chess-gold/30 bg-chess-dark/60 max-w-sm mx-auto">
-      <div className="text-center">
-        <div className="text-3xl mb-2">🌐</div>
-        <h3 className="text-chess-gold font-playfair text-xl font-semibold">Online Multiplayer</h3>
-        <p className="text-chess-cream/60 text-xs mt-1">Play chess with a friend online</p>
-      </div>
+    <div className="flex flex-col gap-4 p-4 bg-chess-panel rounded-xl text-chess-panel-fg">
+      <h3 className="font-display font-bold text-lg text-center">Online Multiplayer</h3>
 
-      {/* Create Game */}
-      <div className="space-y-3">
-        <h4 className="text-chess-gold/80 text-sm font-semibold uppercase tracking-wide">Create a Game</h4>
-        {!createdGameId ? (
-          <Button
-            onClick={handleCreate}
-            disabled={createGameMutation.isPending}
-            className="w-full bg-chess-gold text-chess-dark hover:bg-chess-gold/90 font-semibold"
-          >
-            {createGameMutation.isPending ? (
-              <><Loader2 size={14} className="animate-spin mr-2" />Creating…</>
-            ) : (
-              '+ Create New Game'
-            )}
-          </Button>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-chess-cream/70 text-xs">Share this Game ID with your opponent:</p>
+      {/* Create game */}
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={handleCreate}
+          disabled={createGameMutation.isPending}
+          className="min-h-[44px] bg-chess-accent text-chess-accent-fg rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {createGameMutation.isPending ? (
+            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating…</>
+          ) : 'Create New Game'}
+        </button>
+
+        {createdId && (
+          <div className="bg-chess-hover rounded-lg p-3 flex flex-col gap-2">
+            <p className="text-xs text-chess-muted">Share this Game ID with your opponent:</p>
             <div className="flex items-center gap-2">
-              <div className="flex-1 px-3 py-2 rounded-md bg-chess-dark border border-chess-gold/40 text-chess-gold font-mono font-bold text-lg tracking-widest text-center">
-                {createdGameId}
-              </div>
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-md border border-chess-gold/30 text-chess-gold/70 hover:text-chess-gold hover:bg-chess-gold/10 transition-colors"
-              >
-                {copied ? <Check size={16} /> : <Copy size={16} />}
+              <code className="flex-1 bg-chess-bg text-chess-accent font-mono text-lg font-bold px-3 py-1 rounded text-center">
+                {createdId}
+              </code>
+              <button onClick={handleCopy} className="p-2 hover:bg-chess-border rounded min-w-[44px] min-h-[44px] flex items-center justify-center">
+                <Copy size={16} />
               </button>
             </div>
-            <Button
-              onClick={handleStartWaiting}
-              className="w-full bg-chess-gold/20 border border-chess-gold/40 text-chess-gold hover:bg-chess-gold/30 font-semibold"
+            {copied && <p className="text-xs text-chess-accent text-center">Copied!</p>}
+            <button
+              onClick={handleStartCreated}
+              className="min-h-[44px] bg-chess-hover border border-chess-border text-chess-panel-fg rounded-lg font-medium hover:bg-chess-border transition-colors"
             >
-              Start Waiting for Opponent
-            </Button>
+              Wait for Opponent
+            </button>
           </div>
+        )}
+        {createGameMutation.isError && (
+          <p className="text-xs text-red-400 text-center">{(createGameMutation.error as Error).message}</p>
         )}
       </div>
 
-      <div className="border-t border-chess-gold/20" />
-
-      {/* Join Game */}
-      <div className="space-y-3">
-        <h4 className="text-chess-gold/80 text-sm font-semibold uppercase tracking-wide">Join a Game</h4>
-        <div className="flex gap-2">
-          <Input
-            value={joinId}
-            onChange={e => setJoinId(e.target.value.toUpperCase())}
-            placeholder="Enter Game ID…"
-            maxLength={6}
-            className="bg-chess-dark/80 border-chess-gold/30 text-chess-cream placeholder:text-chess-cream/40 focus:border-chess-gold font-mono uppercase tracking-widest"
-            onKeyDown={e => e.key === 'Enter' && handleJoin()}
-          />
-          <Button
-            onClick={handleJoin}
-            disabled={joinGameMutation.isPending || !joinId.trim()}
-            className="bg-chess-gold/20 border border-chess-gold/40 text-chess-gold hover:bg-chess-gold/30 font-semibold px-4"
-          >
-            {joinGameMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : 'Join'}
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-px bg-chess-border" />
+        <span className="text-xs text-chess-muted">or</span>
+        <div className="flex-1 h-px bg-chess-border" />
       </div>
 
-      {error && (
-        <p className="text-red-400 text-sm text-center bg-red-400/10 rounded-md px-3 py-2">{error}</p>
-      )}
+      {/* Join game */}
+      <div className="flex flex-col gap-2">
+        <input
+          type="text"
+          value={joinId}
+          onChange={e => setJoinId(e.target.value.toUpperCase())}
+          placeholder="Enter Game ID"
+          className="min-h-[44px] px-3 py-2 bg-chess-bg border border-chess-border rounded-lg text-chess-panel-fg placeholder:text-chess-muted font-mono text-center text-lg focus:outline-none focus:border-chess-accent"
+          maxLength={8}
+          style={{ fontSize: '16px' }}
+        />
+        <button
+          onClick={handleJoin}
+          disabled={joinGameMutation.isPending || !joinId.trim()}
+          className="min-h-[44px] bg-chess-panel border border-chess-accent text-chess-accent rounded-lg font-semibold hover:bg-chess-accent hover:text-chess-accent-fg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {joinGameMutation.isPending ? (
+            <><div className="w-4 h-4 border-2 border-chess-accent border-t-transparent rounded-full animate-spin" /> Joining…</>
+          ) : 'Join Game'}
+        </button>
+        {joinGameMutation.isError && (
+          <p className="text-xs text-red-400 text-center">{(joinGameMutation.error as Error).message}</p>
+        )}
+      </div>
     </div>
   );
 }

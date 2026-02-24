@@ -1,26 +1,19 @@
 import AccessControl "authorization/access-control";
-import Map "mo:core/Map";
-import Nat "mo:core/Nat";
-import Time "mo:core/Time";
 import Array "mo:core/Array";
-import MixinAuthorization "authorization/MixinAuthorization";
+import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
+import Time "mo:core/Time";
+
+import MixinAuthorization "authorization/MixinAuthorization";
 
 
 
 actor {
   type PieceType = { #pawn; #knight; #bishop; #rook; #queen; #king };
   type Color = { #white; #black };
-
   type Position = { x : Nat; y : Nat };
-
-  type Piece = {
-    pieceType : PieceType;
-    position : Position;
-    color : Color;
-  };
-
+  type Piece = { pieceType : PieceType; position : Position; color : Color };
   type GameState = {
     board : [[?Piece]];
     currentTurn : Color;
@@ -28,17 +21,11 @@ actor {
     startTime : Time.Time;
     whitePlayer : Principal;
     blackPlayer : Principal;
+    enPassantTarget : ?Position;
   };
-
-  type PlayerStats = {
-    points : Nat;
-    wins : Nat;
-    gamesPlayed : Nat;
-    draws : Nat;
-    losses : Nat;
-  };
-
+  public type PlayerStats = { points : Nat; wins : Nat; gamesPlayed : Nat; draws : Nat; losses : Nat };
   type UserProfile = { name : Text };
+  type AIMatchResult = { #win; #loss; #draw };
 
   let games = Map.empty<Text, GameState>();
   let playerStats = Map.empty<Principal, PlayerStats>();
@@ -47,7 +34,21 @@ actor {
 
   include MixinAuthorization(accessControlState);
 
-  // ── User profile functions (required by instructions) ──────────────────────
+  func getOrInitStats(p : Principal) : PlayerStats {
+    switch (playerStats.get(p)) {
+      case (null) {
+        {
+          points = 0;
+          wins = 0;
+          gamesPlayed = 0;
+          draws = 0;
+          losses = 0;
+        };
+      };
+      case (?stats) { stats };
+    };
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can get their profile");
@@ -69,17 +70,49 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // ── Player stats ───────────────────────────────────────────────────────────
-  // Users can view their own stats; admins can view anyone's stats.
-  public query ({ caller }) func getPlayerStats(player : Principal) : async ?PlayerStats {
-    if (caller != player and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own stats");
+  public query ({ caller }) func getPlayerStats() : async PlayerStats {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get player stats");
     };
-    playerStats.get(player);
+    getOrInitStats(caller);
   };
 
-  // ── Game management ────────────────────────────────────────────────────────
-  // Only authenticated users can create games.
+  public shared ({ caller }) func recordAIMatchResult(result : AIMatchResult) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can record AI match results");
+    };
+
+    let current = getOrInitStats(caller);
+
+    let updated : PlayerStats = switch (result) {
+      case (#win) {
+        {
+          current with
+          points = current.points + 10;
+          wins = current.wins + 1;
+          gamesPlayed = current.gamesPlayed + 1;
+        };
+      };
+      case (#loss) {
+        {
+          current with
+          gamesPlayed = current.gamesPlayed + 1;
+          losses = current.losses + 1;
+        };
+      };
+      case (#draw) {
+        {
+          current with
+          points = current.points + 3;
+          draws = current.draws + 1;
+          gamesPlayed = current.gamesPlayed + 1;
+        };
+      };
+    };
+
+    playerStats.add(caller, updated);
+  };
+
   public shared ({ caller }) func createGame(gameId : Text, whitePlayer : Principal) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create games");
@@ -103,12 +136,12 @@ actor {
       startTime = Time.now();
       whitePlayer;
       blackPlayer = Principal.fromText("aaaaa-aa");
+      enPassantTarget = null;
     };
 
     games.add(gameId, gameState);
   };
 
-  // Only authenticated users can join games.
   public shared ({ caller }) func joinGame(gameId : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can join games");
@@ -131,7 +164,6 @@ actor {
     };
   };
 
-  // Only players in the game or admins can view game state.
   public query ({ caller }) func getGameState(gameId : Text) : async ?GameState {
     switch (games.get(gameId)) {
       case (null) { Runtime.trap("Game not found") };
@@ -148,37 +180,17 @@ actor {
     };
   };
 
-  // updateStats is admin-only: awarding points must be a privileged operation
-  // to prevent any user from fraudulently granting themselves or others points.
   public shared ({ caller }) func updateStats(winner : ?Principal, white : Principal, black : Principal, isDraw : Bool) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can update stats");
     };
 
-    let defaultStats : PlayerStats = {
-      points = 0;
-      wins = 0;
-      gamesPlayed = 0;
-      draws = 0;
-      losses = 0;
-    };
-
-    let whiteStats = switch (playerStats.get(white)) {
-      case (null) { defaultStats };
-      case (?stats) { stats };
-    };
-
-    let blackStats = switch (playerStats.get(black)) {
-      case (null) { defaultStats };
-      case (?stats) { stats };
-    };
+    let whiteStats = getOrInitStats(white);
+    let blackStats = getOrInitStats(black);
 
     switch (winner, isDraw) {
       case (?winningPlayer, false) {
-        let winnerStats = switch (playerStats.get(winningPlayer)) {
-          case (null) { defaultStats };
-          case (?stats) { stats };
-        };
+        let winnerStats = getOrInitStats(winningPlayer);
 
         let loser = if (winningPlayer == white) { black } else { white };
         let loserStats = if (winningPlayer == white) { blackStats } else { whiteStats };
@@ -225,9 +237,6 @@ actor {
     };
   };
 
-  // Leaderboard is publicly accessible — no authentication required.
-  // Restricting it to logged-in users would prevent guests from viewing rankings.
-  // We return leaderboard in random hashed order for now but plan to add .sortInPlace method once available.
   public query func getLeaderboard() : async [(Principal, PlayerStats)] {
     playerStats.toArray();
   };

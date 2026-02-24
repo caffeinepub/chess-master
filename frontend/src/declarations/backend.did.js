@@ -16,6 +16,7 @@ export const UserRole = IDL.Variant({
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const Time = IDL.Int;
 export const Color = IDL.Variant({ 'black' : IDL.Null, 'white' : IDL.Null });
+export const Position = IDL.Record({ 'x' : IDL.Nat, 'y' : IDL.Nat });
 export const PieceType = IDL.Variant({
   'king' : IDL.Null,
   'pawn' : IDL.Null,
@@ -24,7 +25,6 @@ export const PieceType = IDL.Variant({
   'knight' : IDL.Null,
   'bishop' : IDL.Null,
 });
-export const Position = IDL.Record({ 'x' : IDL.Nat, 'y' : IDL.Nat });
 export const Piece = IDL.Record({
   'pieceType' : PieceType,
   'color' : Color,
@@ -35,6 +35,7 @@ export const GameState = IDL.Record({
   'whitePlayer' : IDL.Principal,
   'blackPlayer' : IDL.Principal,
   'winner' : IDL.Opt(Color),
+  'enPassantTarget' : IDL.Opt(Position),
   'currentTurn' : Color,
   'board' : IDL.Vec(IDL.Vec(IDL.Opt(Piece))),
 });
@@ -44,6 +45,11 @@ export const PlayerStats = IDL.Record({
   'losses' : IDL.Nat,
   'draws' : IDL.Nat,
   'points' : IDL.Nat,
+});
+export const AIMatchResult = IDL.Variant({
+  'win' : IDL.Null,
+  'draw' : IDL.Null,
+  'loss' : IDL.Null,
 });
 
 export const idlService = IDL.Service({
@@ -58,11 +64,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Principal, PlayerStats))],
       ['query'],
     ),
-  'getPlayerStats' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Opt(PlayerStats)],
-      ['query'],
-    ),
+  'getPlayerStats' : IDL.Func([], [PlayerStats], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -70,6 +72,7 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'joinGame' : IDL.Func([IDL.Text], [], []),
+  'recordAIMatchResult' : IDL.Func([AIMatchResult], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateStats' : IDL.Func(
       [IDL.Opt(IDL.Principal), IDL.Principal, IDL.Principal, IDL.Bool],
@@ -89,6 +92,7 @@ export const idlFactory = ({ IDL }) => {
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const Time = IDL.Int;
   const Color = IDL.Variant({ 'black' : IDL.Null, 'white' : IDL.Null });
+  const Position = IDL.Record({ 'x' : IDL.Nat, 'y' : IDL.Nat });
   const PieceType = IDL.Variant({
     'king' : IDL.Null,
     'pawn' : IDL.Null,
@@ -97,7 +101,6 @@ export const idlFactory = ({ IDL }) => {
     'knight' : IDL.Null,
     'bishop' : IDL.Null,
   });
-  const Position = IDL.Record({ 'x' : IDL.Nat, 'y' : IDL.Nat });
   const Piece = IDL.Record({
     'pieceType' : PieceType,
     'color' : Color,
@@ -108,6 +111,7 @@ export const idlFactory = ({ IDL }) => {
     'whitePlayer' : IDL.Principal,
     'blackPlayer' : IDL.Principal,
     'winner' : IDL.Opt(Color),
+    'enPassantTarget' : IDL.Opt(Position),
     'currentTurn' : Color,
     'board' : IDL.Vec(IDL.Vec(IDL.Opt(Piece))),
   });
@@ -117,6 +121,11 @@ export const idlFactory = ({ IDL }) => {
     'losses' : IDL.Nat,
     'draws' : IDL.Nat,
     'points' : IDL.Nat,
+  });
+  const AIMatchResult = IDL.Variant({
+    'win' : IDL.Null,
+    'draw' : IDL.Null,
+    'loss' : IDL.Null,
   });
   
   return IDL.Service({
@@ -131,11 +140,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Principal, PlayerStats))],
         ['query'],
       ),
-    'getPlayerStats' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Opt(PlayerStats)],
-        ['query'],
-      ),
+    'getPlayerStats' : IDL.Func([], [PlayerStats], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -143,6 +148,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'joinGame' : IDL.Func([IDL.Text], [], []),
+    'recordAIMatchResult' : IDL.Func([AIMatchResult], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateStats' : IDL.Func(
         [IDL.Opt(IDL.Principal), IDL.Principal, IDL.Principal, IDL.Bool],

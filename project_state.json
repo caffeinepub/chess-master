@@ -3,16 +3,22 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "Logo does not update as expected"
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-fix-the-application-logo-so-that-it-updates-and-displays-correctly-ensure-the-logo-asset-reference-in-the-html-entry-point-and-any-react-components-that-render-the-logo-reflect-the-current-correct-logo-file-and-do-not-serve-a-stale-or-missing-image",
-      "title": "Fix the application logo so that it updates and displays correctly — ensure the logo asset reference in the HTML entry point and any React components that render the logo reflect the current/correct logo file and do not serve a stale or missing image.",
+      "id": "feature-rebuild-and-restore-the-full-chess-khelo-online-application-with-all-existing-features-local-two-player-mode-vs-ai-mode-auto-play-mode-online-multiplayer-mode-leaderboard-player-stats-user-profiles-with-display-names-internet-identity-authentication-chess-clocks-move-sound-effects-background-music-game-result-panels-and-mobile-friendly-layout",
+      "title": "Rebuild and restore the full Chess Khelo Online application with all existing features: local two-player mode, vs AI mode, auto-play mode, online multiplayer mode, leaderboard, player stats, user profiles with display names, Internet Identity authentication, chess clocks, move sound effects, background music, game result panels, and mobile-friendly layout.",
       "reqIds": [
         "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-maintain-a-dismissible-mobile-banner-informing-users-that-no-native-apk-is-available-and-suggesting-add-to-home-screen-as-an-alternative-dismissed-state-must-persist-in-localstorage",
+      "title": "Maintain a dismissible mobile banner informing users that no native APK is available and suggesting 'Add to Home Screen' as an alternative; dismissed state must persist in localStorage.",
+      "reqIds": [
+        "REQ-2"
       ],
       "version": 1
     }

@@ -1,330 +1,203 @@
 import { Board, Position, Player, CastlingRights } from '../types/chess';
-import { isWhitePiece, isBlackPiece, getPieceColor } from './chess-setup';
+import { getPieceColor } from './chess-setup';
 
-export function isSameColorPiece(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  const fromPiece = board[fromRow][fromCol];
-  const toPiece = board[toRow][toCol];
-  if (!fromPiece || !toPiece) return false;
-  const fromColor = getPieceColor(fromPiece);
-  const toColor = getPieceColor(toPiece);
-  return fromColor === toColor;
+export function isInBounds(row: number, col: number): boolean {
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
 
-export function isValidKnightMove(piece: string, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  if (piece !== '♘' && piece !== '♞') return false;
-
-  const rowDiff = Math.abs(toRow - fromRow);
-  const colDiff = Math.abs(toCol - fromCol);
-
-  if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
-    return true;
-  }
-  return false;
+function isEnemy(piece: string, player: Player): boolean {
+  const color = getPieceColor(piece);
+  return color !== null && color !== player;
 }
 
-export function isValidRookMove(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  if (fromRow !== toRow && fromCol !== toCol) return false;
-
-  if (fromRow === toRow) {
-    const minCol = Math.min(fromCol, toCol);
-    const maxCol = Math.max(fromCol, toCol);
-    for (let col = minCol + 1; col < maxCol; col++) {
-      if (board[fromRow][col] !== null) return false;
-    }
-  } else {
-    const minRow = Math.min(fromRow, toRow);
-    const maxRow = Math.max(fromRow, toRow);
-    for (let row = minRow + 1; row < maxRow; row++) {
-      if (board[row][fromCol] !== null) return false;
-    }
-  }
-  return true;
-}
-
-export function isValidBishopMove(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  const rowDiff = Math.abs(toRow - fromRow);
-  const colDiff = Math.abs(toCol - fromCol);
-  if (rowDiff !== colDiff) return false;
-
-  const rowDir = toRow > fromRow ? 1 : -1;
-  const colDir = toCol > fromCol ? 1 : -1;
-
-  let r = fromRow + rowDir;
-  let c = fromCol + colDir;
-  while (r !== toRow || c !== toCol) {
-    if (board[r][c] !== null) return false;
-    r += rowDir;
-    c += colDir;
-  }
-  return true;
-}
-
-export function isValidQueenMove(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  return isValidRookMove(board, fromRow, fromCol, toRow, toCol) ||
-    isValidBishopMove(board, fromRow, fromCol, toRow, toCol);
-}
-
-export function isValidKingMove(fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  const rowDiff = Math.abs(toRow - fromRow);
-  const colDiff = Math.abs(toCol - fromCol);
-  return rowDiff <= 1 && colDiff <= 1 && (rowDiff + colDiff > 0);
+function isFriendly(piece: string, player: Player): boolean {
+  const color = getPieceColor(piece);
+  return color === player;
 }
 
 export function isValidPawnMove(
   board: Board,
-  piece: string,
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number
+  from: Position,
+  to: Position,
+  player: Player,
+  enPassantTarget: Position | null
 ): boolean {
-  const isWhite = isWhitePiece(piece);
-  const direction = isWhite ? 1 : -1;
-  const startRow = isWhite ? 1 : 6;
+  const dr = to.row - from.row;
+  const dc = to.col - from.col;
+  const dir = player === 'white' ? -1 : 1;
+  const startRow = player === 'white' ? 6 : 1;
 
-  const rowDiff = toRow - fromRow;
-  const colDiff = Math.abs(toCol - fromCol);
-
-  if (colDiff === 0) {
-    if (rowDiff === direction) {
-      return board[toRow][toCol] === null;
-    }
-    if (rowDiff === 2 * direction && fromRow === startRow) {
-      return board[toRow][toCol] === null && board[fromRow + direction][fromCol] === null;
-    }
-    return false;
+  if (dc === 0) {
+    if (dr === dir && !board[to.row][to.col]) return true;
+    if (dr === 2 * dir && from.row === startRow && !board[from.row + dir][from.col] && !board[to.row][to.col]) return true;
+  } else if (Math.abs(dc) === 1 && dr === dir) {
+    if (board[to.row][to.col] && isEnemy(board[to.row][to.col]!, player)) return true;
+    if (enPassantTarget && enPassantTarget.row === to.row && enPassantTarget.col === to.col) return true;
   }
-
-  if (colDiff === 1 && rowDiff === direction) {
-    const target = board[toRow][toCol];
-    if (target !== null) {
-      return isWhite ? isBlackPiece(target) : isWhitePiece(target);
-    }
-    return false;
-  }
-
   return false;
+}
+
+export function isValidKnightMove(from: Position, to: Position): boolean {
+  const dr = Math.abs(to.row - from.row);
+  const dc = Math.abs(to.col - from.col);
+  return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
+}
+
+export function isValidBishopMove(board: Board, from: Position, to: Position, player: Player): boolean {
+  const dr = to.row - from.row;
+  const dc = to.col - from.col;
+  if (Math.abs(dr) !== Math.abs(dc)) return false;
+  const rowDir = dr > 0 ? 1 : -1;
+  const colDir = dc > 0 ? 1 : -1;
+  let r = from.row + rowDir, c = from.col + colDir;
+  while (r !== to.row || c !== to.col) {
+    if (board[r][c]) return false;
+    r += rowDir; c += colDir;
+  }
+  const target = board[to.row][to.col];
+  return !target || isEnemy(target, player);
+}
+
+export function isValidRookMove(board: Board, from: Position, to: Position, player: Player): boolean {
+  if (from.row !== to.row && from.col !== to.col) return false;
+  const rowDir = to.row > from.row ? 1 : to.row < from.row ? -1 : 0;
+  const colDir = to.col > from.col ? 1 : to.col < from.col ? -1 : 0;
+  let r = from.row + rowDir, c = from.col + colDir;
+  while (r !== to.row || c !== to.col) {
+    if (board[r][c]) return false;
+    r += rowDir; c += colDir;
+  }
+  const target = board[to.row][to.col];
+  return !target || isEnemy(target, player);
+}
+
+export function isValidQueenMove(board: Board, from: Position, to: Position, player: Player): boolean {
+  return isValidBishopMove(board, from, to, player) || isValidRookMove(board, from, to, player);
+}
+
+export function isValidKingMove(board: Board, from: Position, to: Position, player: Player): boolean {
+  const dr = Math.abs(to.row - from.row);
+  const dc = Math.abs(to.col - from.col);
+  if (dr > 1 || dc > 1) return false;
+  const target = board[to.row][to.col];
+  return !target || isEnemy(target, player);
 }
 
 export function isValidMove(
   board: Board,
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number
+  from: Position,
+  to: Position,
+  player: Player,
+  enPassantTarget: Position | null = null
 ): boolean {
-  const piece = board[fromRow][fromCol];
+  if (!isInBounds(to.row, to.col)) return false;
+  const piece = board[from.row][from.col];
   if (!piece) return false;
-
-  if (fromRow === toRow && fromCol === toCol) return false;
-  if (isSameColorPiece(board, fromRow, fromCol, toRow, toCol)) return false;
-  if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) return false;
+  if (isFriendly(board[to.row][to.col] ?? '', player)) return false;
 
   switch (piece) {
-    case '♘': case '♞':
-      return isValidKnightMove(piece, fromRow, fromCol, toRow, toCol);
-    case '♖': case '♜':
-      return isValidRookMove(board, fromRow, fromCol, toRow, toCol);
-    case '♗': case '♝':
-      return isValidBishopMove(board, fromRow, fromCol, toRow, toCol);
-    case '♕': case '♛':
-      return isValidQueenMove(board, fromRow, fromCol, toRow, toCol);
-    case '♔': case '♚':
-      return isValidKingMove(fromRow, fromCol, toRow, toCol);
-    case '♙': case '♟':
-      return isValidPawnMove(board, piece, fromRow, fromCol, toRow, toCol);
-    default:
-      return false;
+    case '♙': case '♟': return isValidPawnMove(board, from, to, player, enPassantTarget);
+    case '♘': case '♞': return isValidKnightMove(from, to);
+    case '♗': case '♝': return isValidBishopMove(board, from, to, player);
+    case '♖': case '♜': return isValidRookMove(board, from, to, player);
+    case '♕': case '♛': return isValidQueenMove(board, from, to, player);
+    case '♔': case '♚': return isValidKingMove(board, from, to, player);
+    default: return false;
   }
 }
 
-export function findKing(board: Board, player: Player): Position | null {
-  const kingPiece = player === 'white' ? '♔' : '♚';
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      if (board[row][col] === kingPiece) {
-        return { row, col };
-      }
-    }
+export function applyMove(
+  board: Board,
+  from: Position,
+  to: Position,
+  player: Player,
+  enPassantTarget: Position | null = null
+): Board {
+  const newBoard: Board = board.map(row => [...row]);
+  const piece = newBoard[from.row][from.col];
+  newBoard[to.row][to.col] = piece;
+  newBoard[from.row][from.col] = null;
+
+  // En passant capture
+  if ((piece === '♙' || piece === '♟') && enPassantTarget &&
+    to.row === enPassantTarget.row && to.col === enPassantTarget.col) {
+    const captureRow = player === 'white' ? to.row + 1 : to.row - 1;
+    newBoard[captureRow][to.col] = null;
   }
-  return null;
+
+  // Pawn promotion
+  if (piece === '♙' && to.row === 0) newBoard[to.row][to.col] = '♕';
+  if (piece === '♟' && to.row === 7) newBoard[to.row][to.col] = '♛';
+
+  return newBoard;
 }
 
-export function isSquareUnderAttack(board: Board, row: number, col: number, byPlayer: Player): boolean {
+export function applyCastlingMove(board: Board, from: Position, to: Position): Board {
+  const newBoard: Board = board.map(row => [...row]);
+  const piece = newBoard[from.row][from.col];
+  newBoard[to.row][to.col] = piece;
+  newBoard[from.row][from.col] = null;
+
+  // Move rook
+  if (to.col === 6) {
+    newBoard[from.row][5] = newBoard[from.row][7];
+    newBoard[from.row][7] = null;
+  } else if (to.col === 2) {
+    newBoard[from.row][3] = newBoard[from.row][0];
+    newBoard[from.row][0] = null;
+  }
+
+  return newBoard;
+}
+
+export function isSquareAttacked(board: Board, pos: Position, byPlayer: Player): boolean {
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
-      if (!piece) continue;
-      const pieceColor = getPieceColor(piece);
-      if (pieceColor !== byPlayer) continue;
-      if (isValidMove(board, r, c, row, col)) return true;
+      if (!piece || getPieceColor(piece) !== byPlayer) continue;
+      if (isValidMove(board, { row: r, col: c }, pos, byPlayer, null)) return true;
     }
   }
   return false;
 }
 
-export function isKingInCheck(board: Board, player: Player): boolean {
-  const kingPos = findKing(board, player);
+export function isInCheck(board: Board, player: Player): boolean {
+  const king = player === 'white' ? '♔' : '♚';
+  let kingPos: Position | null = null;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r][c] === king) { kingPos = { row: r, col: c }; break; }
+    }
+    if (kingPos) break;
+  }
   if (!kingPos) return false;
   const opponent: Player = player === 'white' ? 'black' : 'white';
-  return isSquareUnderAttack(board, kingPos.row, kingPos.col, opponent);
+  return isSquareAttacked(board, kingPos, opponent);
 }
 
-export function applyMove(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): Board {
-  const newBoard = board.map(row => [...row]);
-  newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
-  newBoard[fromRow][fromCol] = null;
-  return newBoard;
-}
-
-export function wouldLeaveKingInCheck(
+export function canCastle(
   board: Board,
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number,
-  player: Player
+  player: Player,
+  side: 'kingside' | 'queenside',
+  castlingRights: CastlingRights
 ): boolean {
-  const newBoard = applyMove(board, fromRow, fromCol, toRow, toCol);
-  return isKingInCheck(newBoard, player);
-}
-
-// ─── Castling helpers ──────────────────────────────────────────────────────
-
-/**
- * Returns true if the player can castle kingside.
- * Conditions: rights granted, squares f & g empty, king not in check,
- * king does not pass through f or land on g while under attack.
- */
-export function canCastleKingside(board: Board, player: Player, castlingRights: CastlingRights): boolean {
+  const row = player === 'white' ? 7 : 0;
   const opponent: Player = player === 'white' ? 'black' : 'white';
-  const row = player === 'white' ? 0 : 7;
-  const hasRight = player === 'white' ? castlingRights.whiteKingside : castlingRights.blackKingside;
 
-  if (!hasRight) return false;
-
-  // Squares between king (col 4) and rook (col 7) must be empty: f(5) and g(6)
-  if (board[row][5] !== null || board[row][6] !== null) return false;
-
-  // King must not be in check
-  if (isKingInCheck(board, player)) return false;
-
-  // King must not pass through col 5 under attack
-  if (isSquareUnderAttack(board, row, 5, opponent)) return false;
-
-  // King must not land on col 6 under attack
-  if (isSquareUnderAttack(board, row, 6, opponent)) return false;
-
-  return true;
-}
-
-/**
- * Returns true if the player can castle queenside.
- * Conditions: rights granted, squares b,c,d empty, king not in check,
- * king does not pass through d or land on c while under attack.
- */
-export function canCastleQueenside(board: Board, player: Player, castlingRights: CastlingRights): boolean {
-  const opponent: Player = player === 'white' ? 'black' : 'white';
-  const row = player === 'white' ? 0 : 7;
-  const hasRight = player === 'white' ? castlingRights.whiteQueenside : castlingRights.blackQueenside;
-
-  if (!hasRight) return false;
-
-  // Squares between king (col 4) and rook (col 0) must be empty: b(1), c(2), d(3)
-  if (board[row][1] !== null || board[row][2] !== null || board[row][3] !== null) return false;
-
-  // King must not be in check
-  if (isKingInCheck(board, player)) return false;
-
-  // King must not pass through col 3 under attack
-  if (isSquareUnderAttack(board, row, 3, opponent)) return false;
-
-  // King must not land on col 2 under attack
-  if (isSquareUnderAttack(board, row, 2, opponent)) return false;
-
-  return true;
-}
-
-/**
- * Detect if a king move is a castling move (king moves 2 squares horizontally).
- */
-export function isCastlingMove(
-  board: Board,
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number
-): boolean {
-  const piece = board[fromRow][fromCol];
-  if (piece !== '♔' && piece !== '♚') return false;
-  if (fromRow !== toRow) return false;
-  return Math.abs(toCol - fromCol) === 2;
-}
-
-/**
- * Apply a castling move: moves king and rook atomically.
- * Returns the new board (Board = Square[][]).
- */
-export function applyCastlingMove(
-  board: Board,
-  fromRow: number,
-  fromCol: number,
-  toRow: number,
-  toCol: number
-): Board {
-  const newBoard: Board = board.map(row => [...row]);
-  const isKingside = toCol > fromCol;
-
-  // Move king
-  newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
-  newBoard[fromRow][fromCol] = null;
-
-  // Move rook
-  if (isKingside) {
-    // Rook from h-file (col 7) to f-file (col 5)
-    newBoard[fromRow][5] = newBoard[fromRow][7];
-    newBoard[fromRow][7] = null;
+  if (side === 'kingside') {
+    if (player === 'white' && !castlingRights.whiteKingside) return false;
+    if (player === 'black' && !castlingRights.blackKingside) return false;
+    if (board[row][5] || board[row][6]) return false;
+    if (isSquareAttacked(board, { row, col: 4 }, opponent)) return false;
+    if (isSquareAttacked(board, { row, col: 5 }, opponent)) return false;
+    if (isSquareAttacked(board, { row, col: 6 }, opponent)) return false;
   } else {
-    // Rook from a-file (col 0) to d-file (col 3)
-    newBoard[fromRow][3] = newBoard[fromRow][0];
-    newBoard[fromRow][0] = null;
+    if (player === 'white' && !castlingRights.whiteQueenside) return false;
+    if (player === 'black' && !castlingRights.blackQueenside) return false;
+    if (board[row][1] || board[row][2] || board[row][3]) return false;
+    if (isSquareAttacked(board, { row, col: 4 }, opponent)) return false;
+    if (isSquareAttacked(board, { row, col: 3 }, opponent)) return false;
+    if (isSquareAttacked(board, { row, col: 2 }, opponent)) return false;
   }
-
-  return newBoard;
-}
-
-/**
- * Update castling rights after a move.
- * Clears rights when king or rook moves from their starting squares.
- */
-export function updateCastlingRights(
-  castlingRights: CastlingRights,
-  piece: string,
-  fromRow: number,
-  fromCol: number
-): CastlingRights {
-  const rights = { ...castlingRights };
-
-  // White king moved
-  if (piece === '♔') {
-    rights.whiteKingside = false;
-    rights.whiteQueenside = false;
-  }
-  // Black king moved
-  if (piece === '♚') {
-    rights.blackKingside = false;
-    rights.blackQueenside = false;
-  }
-  // White rooks
-  if (piece === '♖') {
-    if (fromRow === 0 && fromCol === 7) rights.whiteKingside = false;
-    if (fromRow === 0 && fromCol === 0) rights.whiteQueenside = false;
-  }
-  // Black rooks
-  if (piece === '♜') {
-    if (fromRow === 7 && fromCol === 7) rights.blackKingside = false;
-    if (fromRow === 7 && fromCol === 0) rights.blackQueenside = false;
-  }
-
-  return rights;
+  return true;
 }

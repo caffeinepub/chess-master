@@ -1,53 +1,40 @@
 import { Board, Position, Player, CastlingRights } from '../types/chess';
-import {
-  isValidMove,
-  wouldLeaveKingInCheck,
-  canCastleKingside,
-  canCastleQueenside,
-} from './move-validation';
+import { isValidMove, applyMove, isInCheck, canCastle } from './move-validation';
 import { getPieceColor } from './chess-setup';
-
-const DEFAULT_CASTLING_RIGHTS: CastlingRights = {
-  whiteKingside: false,
-  whiteQueenside: false,
-  blackKingside: false,
-  blackQueenside: false,
-};
 
 export function getValidMovesForPiece(
   board: Board,
-  row: number,
-  col: number,
+  pos: Position,
   player: Player,
-  castlingRights: CastlingRights = DEFAULT_CASTLING_RIGHTS
+  enPassantTarget: Position | null = null,
+  castlingRights?: CastlingRights
 ): Position[] {
-  const piece = board[row][col];
-  if (!piece) return [];
-  if (getPieceColor(piece) !== player) return [];
-
   const moves: Position[] = [];
 
-  for (let toRow = 0; toRow < 8; toRow++) {
-    for (let toCol = 0; toCol < 8; toCol++) {
-      if (isValidMove(board, row, col, toRow, toCol)) {
-        if (!wouldLeaveKingInCheck(board, row, col, toRow, toCol, player)) {
-          moves.push({ row: toRow, col: toCol });
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const to = { row: r, col: c };
+      if (isValidMove(board, pos, to, player, enPassantTarget)) {
+        const newBoard = applyMove(board, pos, to, player, enPassantTarget);
+        if (!isInCheck(newBoard, player)) {
+          moves.push(to);
         }
       }
     }
   }
 
-  // Add castling moves for king
-  if (piece === '♔' || piece === '♚') {
-    const castleRow = player === 'white' ? 0 : 7;
-    if (row === castleRow && col === 4) {
-      // Kingside castling → king moves to col 6
-      if (canCastleKingside(board, player, castlingRights)) {
-        moves.push({ row: castleRow, col: 6 });
-      }
-      // Queenside castling → king moves to col 2
-      if (canCastleQueenside(board, player, castlingRights)) {
-        moves.push({ row: castleRow, col: 2 });
+  // Castling
+  if (castlingRights) {
+    const piece = board[pos.row][pos.col];
+    if ((piece === '♔' && player === 'white') || (piece === '♚' && player === 'black')) {
+      const row = player === 'white' ? 7 : 0;
+      if (pos.row === row && pos.col === 4) {
+        if (canCastle(board, player, 'kingside', castlingRights)) {
+          moves.push({ row, col: 6 });
+        }
+        if (canCastle(board, player, 'queenside', castlingRights)) {
+          moves.push({ row, col: 2 });
+        }
       }
     }
   }
@@ -55,55 +42,43 @@ export function getValidMovesForPiece(
   return moves;
 }
 
-/**
- * Alias for getValidMovesForPiece using a Position object.
- */
 export function getValidMoves(
   board: Board,
-  position: Position,
+  pos: Position,
+  enPassantTarget: Position | null,
   player: Player,
-  castlingRights: CastlingRights = DEFAULT_CASTLING_RIGHTS
+  castlingRights?: CastlingRights
 ): Position[] {
-  return getValidMovesForPiece(board, position.row, position.col, player, castlingRights);
+  const piece = board[pos.row][pos.col];
+  if (!piece || getPieceColor(piece) !== player) return [];
+  return getValidMovesForPiece(board, pos, player, enPassantTarget, castlingRights);
 }
 
 export function getAllValidMovesForPlayer(
   board: Board,
   player: Player,
-  castlingRights: CastlingRights = DEFAULT_CASTLING_RIGHTS
-): Map<string, Position[]> {
-  const allMoves = new Map<string, Position[]>();
-
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const piece = board[row][col];
-      if (!piece) continue;
-      if (getPieceColor(piece) !== player) continue;
-
-      const moves = getValidMovesForPiece(board, row, col, player, castlingRights);
-      if (moves.length > 0) {
-        allMoves.set(`${row},${col}`, moves);
+  enPassantTarget: Position | null = null,
+  castlingRights?: CastlingRights
+): { from: Position; to: Position }[] {
+  const moves: { from: Position; to: Position }[] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (!piece || getPieceColor(piece) !== player) continue;
+      const pieceMoves = getValidMovesForPiece(board, { row: r, col: c }, player, enPassantTarget, castlingRights);
+      for (const to of pieceMoves) {
+        moves.push({ from: { row: r, col: c }, to });
       }
     }
   }
-
-  return allMoves;
+  return moves;
 }
 
 export function hasAnyValidMoves(
   board: Board,
   player: Player,
-  castlingRights: CastlingRights = DEFAULT_CASTLING_RIGHTS
+  enPassantTarget: Position | null = null,
+  castlingRights?: CastlingRights
 ): boolean {
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const piece = board[row][col];
-      if (!piece) continue;
-      if (getPieceColor(piece) !== player) continue;
-
-      const moves = getValidMovesForPiece(board, row, col, player, castlingRights);
-      if (moves.length > 0) return true;
-    }
-  }
-  return false;
+  return getAllValidMovesForPlayer(board, player, enPassantTarget, castlingRights).length > 0;
 }

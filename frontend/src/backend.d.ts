@@ -22,6 +22,7 @@ export interface GameState {
     whitePlayer: Principal;
     blackPlayer: Principal;
     winner?: Color;
+    enPassantTarget?: Position;
     currentTurn: Color;
     board: Array<Array<Piece | null>>;
 }
@@ -34,6 +35,11 @@ export interface PlayerStats {
     losses: bigint;
     draws: bigint;
     points: bigint;
+}
+export enum AIMatchResult {
+    win = "win",
+    draw = "draw",
+    loss = "loss"
 }
 export enum Color {
     black = "black",
@@ -59,10 +65,11 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getGameState(gameId: string): Promise<GameState | null>;
     getLeaderboard(): Promise<Array<[Principal, PlayerStats]>>;
-    getPlayerStats(player: Principal): Promise<PlayerStats | null>;
+    getPlayerStats(): Promise<PlayerStats>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     joinGame(gameId: string): Promise<void>;
+    recordAIMatchResult(result: AIMatchResult): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateStats(winner: Principal | null, white: Principal, black: Principal, isDraw: boolean): Promise<void>;
 }

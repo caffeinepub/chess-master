@@ -1,19 +1,19 @@
 import React from 'react';
+import { Player, GameResult, DrawReason } from '../types/chess';
 import { Volume2, VolumeX } from 'lucide-react';
-import type { GameResult, DrawReason } from '../types/chess';
 
 interface GameStatusProps {
-  gameOver: GameResult;
-  drawReason?: DrawReason;
+  currentPlayer: Player;
+  gameOver: boolean;
+  result: GameResult;
+  drawReason: DrawReason;
   isCheck: boolean;
-  currentPlayer: 'white' | 'black';
-  gameMode: string;
   isAIThinking?: boolean;
   whiteTime?: number;
   blackTime?: number;
-  toggleMute?: () => void;
   isMuted?: boolean;
-  gameStarted?: boolean;
+  onToggleMute?: () => void;
+  gameMode?: string;
 }
 
 function formatTime(seconds: number): string {
@@ -23,85 +23,61 @@ function formatTime(seconds: number): string {
 }
 
 export default function GameStatus({
+  currentPlayer,
   gameOver,
+  result,
   drawReason,
   isCheck,
-  currentPlayer,
-  gameMode,
   isAIThinking,
   whiteTime,
   blackTime,
-  toggleMute,
   isMuted,
-  gameStarted = false,
+  onToggleMute,
+  gameMode,
 }: GameStatusProps) {
-  const showClocks = whiteTime !== undefined && blackTime !== undefined;
-
-  const getGameOverMessage = () => {
-    if (!gameOver) return null;
-    if (gameOver === 'draw') {
-      if (drawReason === 'threefold') return '🤝 Draw – Threefold Repetition!';
-      if (drawReason === 'stalemate') return '🤝 Draw – Stalemate!';
-      return '🤝 Draw!';
-    }
-    return `🏆 ${gameOver === 'white' ? 'White' : 'Black'} Wins by Checkmate!`;
-  };
-
+  let statusMsg = '';
   if (gameOver) {
-    return (
-      <div className="game-over-overlay">
-        <div className="game-over-content">
-          <div className="game-over-message">{getGameOverMessage()}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showClocks) {
-    return (
-      <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30 w-full max-w-[560px]">
-        <div className={`clock ${gameStarted && currentPlayer === 'white' ? 'clock-active' : ''} ${!gameStarted ? 'opacity-50' : ''}`}>
-          ♔ {formatTime(whiteTime!)}
-        </div>
-        {toggleMute && (
-          <button
-            onClick={toggleMute}
-            className="p-1 text-chess-gold/70 hover:text-chess-gold transition-colors"
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-        )}
-        <div className={`clock ${gameStarted && currentPlayer === 'black' ? 'clock-active' : ''} ${!gameStarted ? 'opacity-50' : ''}`}>
-          ♚ {formatTime(blackTime!)}
-        </div>
-      </div>
-    );
+    if (result === 'draw') {
+      statusMsg = drawReason === 'stalemate' ? 'Stalemate – Draw!' :
+        drawReason === 'threefold-repetition' ? 'Threefold Repetition – Draw!' : 'Draw!';
+    } else if (result) {
+      statusMsg = `${result.charAt(0).toUpperCase() + result.slice(1)} wins!`;
+    }
+  } else if (isAIThinking) {
+    statusMsg = 'AI is thinking…';
+  } else if (isCheck) {
+    statusMsg = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} is in check!`;
+  } else {
+    statusMsg = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s turn`;
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30 w-full max-w-[560px]">
-      <div className="status-text">
-        {!gameStarted ? (
-          <span className="opacity-60">Press Start Game to begin</span>
-        ) : isAIThinking ? (
-          <span className="flex items-center gap-2">
-            AI thinking
-            <span className="thinking-dot" style={{ animationDelay: '0ms' }}>•</span>
-            <span className="thinking-dot" style={{ animationDelay: '200ms' }}>•</span>
-            <span className="thinking-dot" style={{ animationDelay: '400ms' }}>•</span>
-          </span>
-        ) : isCheck ? (
-          <span className="text-red-400 font-bold">⚠️ Check!</span>
-        ) : (
-          <span>{currentPlayer === 'white' ? '♔ White' : '♚ Black'} to move</span>
-        )}
+    <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-chess-panel rounded-lg text-chess-panel-fg">
+      {/* White clock */}
+      {whiteTime !== undefined && (
+        <div className={`chess-clock ${currentPlayer === 'white' && !gameOver ? 'chess-clock-active' : ''}`}>
+          ♔ {formatTime(whiteTime)}
+        </div>
+      )}
+
+      {/* Status message */}
+      <div className="flex-1 text-center text-sm font-medium truncate px-1">
+        {statusMsg}
       </div>
-      {toggleMute && (
+
+      {/* Black clock */}
+      {blackTime !== undefined && (
+        <div className={`chess-clock ${currentPlayer === 'black' && !gameOver ? 'chess-clock-active' : ''}`}>
+          ♚ {formatTime(blackTime)}
+        </div>
+      )}
+
+      {/* Mute toggle */}
+      {onToggleMute && (
         <button
-          onClick={toggleMute}
-          className="p-1 text-chess-gold/70 hover:text-chess-gold transition-colors"
-          title={isMuted ? 'Unmute' : 'Mute'}
+          onClick={onToggleMute}
+          className="p-1.5 rounded hover:bg-chess-hover transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={isMuted ? 'Unmute music' : 'Mute music'}
         >
           {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>

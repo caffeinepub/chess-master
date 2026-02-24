@@ -1,121 +1,82 @@
 import React from 'react';
-import { isWhitePiece, isBlackPiece } from '../utils/chess-setup';
+import { Position } from '../types/chess';
 
 interface ChessSquareProps {
   piece: string | null;
-  isLight: boolean;
-  isSelected: boolean;
-  isValidMove: boolean;
-  isInCheck: boolean;
-  isLastMove?: boolean;
   row: number;
   col: number;
-  onClick: () => void;
+  isSelected: boolean;
+  isValidMove: boolean;
+  isLastMove: boolean;
+  isCheck: boolean;
+  onClick: (pos: Position) => void;
+  disabled?: boolean;
 }
 
-const ChessSquare: React.FC<ChessSquareProps> = ({
+const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+export default function ChessSquare({
   piece,
-  isLight,
-  isSelected,
-  isValidMove,
-  isInCheck,
-  isLastMove = false,
   row,
   col,
+  isSelected,
+  isValidMove,
+  isLastMove,
+  isCheck,
   onClick,
-}) => {
-  const getSquareClass = () => {
-    let base = 'chess-square relative flex items-center justify-center cursor-pointer select-none transition-all duration-150 ';
+  disabled = false,
+}: ChessSquareProps) {
+  const isLight = (row + col) % 2 === 0;
 
-    if (isSelected) {
-      base += 'bg-chess-selected ';
-    } else if (isInCheck) {
-      base += 'bg-chess-check ';
-    } else if (isLight) {
-      base += 'bg-chess-light ';
-    } else {
-      base += 'bg-chess-dark ';
-    }
+  let bgClass = isLight ? 'chess-square-light' : 'chess-square-dark';
+  if (isSelected) bgClass = 'chess-square-selected';
+  else if (isLastMove) bgClass = isLight ? 'chess-square-lastmove-light' : 'chess-square-lastmove-dark';
+  if (isCheck && piece && (piece === '♔' || piece === '♚')) bgClass = 'chess-square-check';
 
-    return base;
-  };
-
-  const getPieceColor = (): string => {
-    if (!piece) return '';
-    if (isWhitePiece(piece)) return 'var(--chess-piece-white)';
-    if (isBlackPiece(piece)) return 'var(--chess-piece-black)';
-    return '';
-  };
-
-  const getPieceShadow = (): string => {
-    if (!piece) return 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))';
-    if (isWhitePiece(piece)) {
-      return 'drop-shadow(0 0 1.5px rgba(60,40,0,0.7)) drop-shadow(0 2px 3px rgba(0,0,0,0.6))';
-    }
-    return 'drop-shadow(0 0 1.5px rgba(180,200,255,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.7))';
-  };
-
-  const showCoordCol = row === 0;
-  const showCoordRow = col === 0;
-  const colLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-  const rowLabels = ['1', '2', '3', '4', '5', '6', '7', '8'];
+  const showFileLabel = row === 7;
+  const showRankLabel = col === 0;
 
   return (
     <div
-      className={getSquareClass()}
-      onClick={onClick}
-      style={{ aspectRatio: '1 / 1' }}
+      className={`chess-square relative ${bgClass} ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
+      onClick={() => !disabled && onClick({ row, col })}
+      role="button"
+      aria-label={`${FILES[col]}${RANKS[row]}${piece ? ` ${piece}` : ''}`}
     >
-      {/* Last move highlight */}
-      {isLastMove && !isSelected && !isInCheck && (
-        <div
-          className="absolute inset-0 pointer-events-none z-0 last-move-highlight"
-        />
+      {/* Rank label */}
+      {showRankLabel && (
+        <span className={`absolute top-0.5 left-0.5 text-[clamp(7px,1.2vw,11px)] font-semibold leading-none z-10 ${isLight ? 'text-chess-dark' : 'text-chess-light'} opacity-70`}>
+          {RANKS[row]}
+        </span>
+      )}
+      {/* File label */}
+      {showFileLabel && (
+        <span className={`absolute bottom-0.5 right-1 text-[clamp(7px,1.2vw,11px)] font-semibold leading-none z-10 ${isLight ? 'text-chess-dark' : 'text-chess-light'} opacity-70`}>
+          {FILES[col]}
+        </span>
       )}
 
-      {/* Valid move indicator */}
-      {isValidMove && (
-        <div
-          className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10`}
-        >
-          {piece ? (
-            <div className="absolute inset-0 border-4 border-chess-gold opacity-80 rounded-sm" />
-          ) : (
-            <div className="w-[34%] h-[34%] rounded-full bg-chess-gold opacity-70" />
-          )}
+      {/* Valid move dot */}
+      {isValidMove && !piece && (
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="w-[28%] h-[28%] rounded-full bg-chess-accent opacity-60" />
         </div>
       )}
-
-      {/* Coordinate labels */}
-      {showCoordRow && (
-        <span className="absolute top-0.5 left-1 text-[10px] font-semibold opacity-60 z-20 font-chess"
-          style={{ color: isLight ? 'var(--chess-dark-text)' : 'var(--chess-light-text)' }}>
-          {rowLabels[row]}
-        </span>
-      )}
-      {showCoordCol && (
-        <span className="absolute bottom-0.5 right-1 text-[10px] font-semibold opacity-60 z-20 font-chess"
-          style={{ color: isLight ? 'var(--chess-dark-text)' : 'var(--chess-light-text)' }}>
-          {colLabels[col]}
-        </span>
+      {/* Valid capture ring */}
+      {isValidMove && piece && (
+        <div className="absolute inset-0 rounded-sm ring-4 ring-chess-accent ring-inset opacity-70 z-20" />
       )}
 
       {/* Piece */}
       {piece && (
         <span
-          className="chess-piece z-20 leading-none select-none"
-          style={{
-            fontSize: 'clamp(24px, 5vw, 52px)',
-            color: getPieceColor(),
-            filter: getPieceShadow(),
-            textShadow: 'none',
-          }}
+          className="chess-piece absolute inset-0 flex items-center justify-center select-none z-30"
+          style={{ fontSize: 'clamp(18px, 5vw, 44px)' }}
         >
           {piece}
         </span>
       )}
     </div>
   );
-};
-
-export default ChessSquare;
+}

@@ -1,12 +1,11 @@
-import { Board, Player } from '../types/chess';
-import { isKingInCheck } from './move-validation';
+import { Board, Player, GameResult, DrawReason } from '../types/chess';
+import { isInCheck } from './move-validation';
 import { hasAnyValidMoves } from './valid-moves';
-import type { DrawReason } from '../types/chess';
 
 export interface GameStatusResult {
   status: 'playing' | 'check' | 'checkmate' | 'stalemate' | 'draw';
-  winner?: Player;
-  drawReason?: DrawReason;
+  result: GameResult;
+  drawReason: DrawReason;
 }
 
 export function getGameStatus(
@@ -15,25 +14,24 @@ export function getGameStatus(
   drawReason?: DrawReason
 ): GameStatusResult {
   if (drawReason) {
-    return { status: 'draw', drawReason };
+    return { status: 'draw', result: 'draw', drawReason };
   }
 
-  const hasLegalMoves = hasAnyValidMoves(board, currentPlayer);
+  const inCheck = isInCheck(board, currentPlayer);
+  const hasMoves = hasAnyValidMoves(board, currentPlayer);
 
-  if (!hasLegalMoves) {
-    const inCheck = isKingInCheck(board, currentPlayer);
+  if (!hasMoves) {
     if (inCheck) {
-      const winner: Player = currentPlayer === 'white' ? 'black' : 'white';
-      return { status: 'checkmate', winner };
+      const winner: GameResult = currentPlayer === 'white' ? 'black' : 'white';
+      return { status: 'checkmate', result: winner, drawReason: null };
     } else {
-      return { status: 'stalemate', drawReason: 'stalemate' };
+      return { status: 'stalemate', result: 'draw', drawReason: 'stalemate' };
     }
   }
 
-  const inCheck = isKingInCheck(board, currentPlayer);
   if (inCheck) {
-    return { status: 'check' };
+    return { status: 'check', result: null, drawReason: null };
   }
 
-  return { status: 'playing' };
+  return { status: 'playing', result: null, drawReason: null };
 }

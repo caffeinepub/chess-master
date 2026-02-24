@@ -17,9 +17,8 @@ export default function LoginButton() {
     } else {
       try {
         await login();
-      } catch (error: unknown) {
-        const err = error as Error;
-        if (err?.message === 'User is already authenticated') {
+      } catch (error: any) {
+        if (error?.message === 'User is already authenticated') {
           await clear();
           setTimeout(() => login(), 300);
         }
@@ -31,20 +30,26 @@ export default function LoginButton() {
     <button
       onClick={handleAuth}
       disabled={isLoggingIn}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
-        isAuthenticated
-          ? 'border-chess-gold/40 text-chess-gold/80 hover:bg-chess-gold/10 hover:text-chess-gold'
-          : 'border-chess-gold bg-chess-gold/10 text-chess-gold hover:bg-chess-gold/20'
-      } disabled:opacity-50`}
+      className={`
+        flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-colors
+        min-w-[44px] min-h-[44px] shrink-0
+        ${isAuthenticated
+          ? 'bg-chess-hover text-chess-panel-fg hover:bg-chess-border'
+          : 'bg-chess-accent text-chess-accent-fg hover:opacity-90'
+        }
+        disabled:opacity-50
+      `}
     >
       {isLoggingIn ? (
-        <Loader2 size={14} className="animate-spin" />
+        <Loader2 size={16} className="animate-spin" />
       ) : isAuthenticated ? (
-        <LogOut size={14} />
+        <LogOut size={16} />
       ) : (
-        <LogIn size={14} />
+        <LogIn size={16} />
       )}
-      {isLoggingIn ? 'Logging in...' : isAuthenticated ? 'Logout' : 'Login'}
+      <span className="hidden sm:inline">
+        {isLoggingIn ? 'Logging in…' : isAuthenticated ? 'Logout' : 'Login'}
+      </span>
     </button>
   );
 }

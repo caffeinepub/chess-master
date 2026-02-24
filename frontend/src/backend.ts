@@ -104,6 +104,7 @@ export interface GameState {
     whitePlayer: Principal;
     blackPlayer: Principal;
     winner?: Color;
+    enPassantTarget?: Position;
     currentTurn: Color;
     board: Array<Array<Piece | null>>;
 }
@@ -116,6 +117,11 @@ export interface PlayerStats {
     losses: bigint;
     draws: bigint;
     points: bigint;
+}
+export enum AIMatchResult {
+    win = "win",
+    draw = "draw",
+    loss = "loss"
 }
 export enum Color {
     black = "black",
@@ -142,14 +148,15 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getGameState(gameId: string): Promise<GameState | null>;
     getLeaderboard(): Promise<Array<[Principal, PlayerStats]>>;
-    getPlayerStats(player: Principal): Promise<PlayerStats | null>;
+    getPlayerStats(): Promise<PlayerStats>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     joinGame(gameId: string): Promise<void>;
+    recordAIMatchResult(result: AIMatchResult): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateStats(winner: Principal | null, white: Principal, black: Principal, isDraw: boolean): Promise<void>;
 }
-import type { Color as _Color, GameState as _GameState, Piece as _Piece, PieceType as _PieceType, PlayerStats as _PlayerStats, Position as _Position, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { AIMatchResult as _AIMatchResult, Color as _Color, GameState as _GameState, Piece as _Piece, PieceType as _PieceType, Position as _Position, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -250,18 +257,18 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getPlayerStats(arg0: Principal): Promise<PlayerStats | null> {
+    async getPlayerStats(): Promise<PlayerStats> {
         if (this.processError) {
             try {
-                const result = await this.actor.getPlayerStats(arg0);
-                return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.getPlayerStats();
+                return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getPlayerStats(arg0);
-            return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.getPlayerStats();
+            return result;
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
@@ -306,6 +313,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async recordAIMatchResult(arg0: AIMatchResult): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.recordAIMatchResult(to_candid_AIMatchResult_n20(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.recordAIMatchResult(to_candid_AIMatchResult_n20(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
@@ -323,14 +344,14 @@ export class Backend implements backendInterface {
     async updateStats(arg0: Principal | null, arg1: Principal, arg2: Principal, arg3: boolean): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateStats(to_candid_opt_n20(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
+                const result = await this.actor.updateStats(to_candid_opt_n22(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateStats(to_candid_opt_n20(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
+            const result = await this.actor.updateStats(to_candid_opt_n22(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
             return result;
         }
     }
@@ -341,20 +362,20 @@ function from_candid_Color_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint
 function from_candid_GameState_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _GameState): GameState {
     return from_candid_record_n8(_uploadFile, _downloadFile, value);
 }
-function from_candid_PieceType_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PieceType): PieceType {
-    return from_candid_variant_n18(_uploadFile, _downloadFile, value);
+function from_candid_PieceType_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PieceType): PieceType {
+    return from_candid_variant_n19(_uploadFile, _downloadFile, value);
 }
-function from_candid_Piece_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Piece): Piece {
-    return from_candid_record_n16(_uploadFile, _downloadFile, value);
+function from_candid_Piece_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Piece): Piece {
+    return from_candid_record_n17(_uploadFile, _downloadFile, value);
 }
 function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Piece]): Piece | null {
-    return value.length === 0 ? null : from_candid_Piece_n15(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PlayerStats]): PlayerStats | null {
+function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Position]): Position | null {
     return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Piece]): Piece | null {
+    return value.length === 0 ? null : from_candid_Piece_n16(_uploadFile, _downloadFile, value[0]);
 }
 function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
@@ -365,7 +386,7 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Color]): Color | null {
     return value.length === 0 ? null : from_candid_Color_n10(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     pieceType: _PieceType;
     color: _Color;
     position: _Position;
@@ -375,7 +396,7 @@ function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uin
     position: Position;
 } {
     return {
-        pieceType: from_candid_PieceType_n17(_uploadFile, _downloadFile, value.pieceType),
+        pieceType: from_candid_PieceType_n18(_uploadFile, _downloadFile, value.pieceType),
         color: from_candid_Color_n10(_uploadFile, _downloadFile, value.color),
         position: value.position
     };
@@ -385,6 +406,7 @@ function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint
     whitePlayer: Principal;
     blackPlayer: Principal;
     winner: [] | [_Color];
+    enPassantTarget: [] | [_Position];
     currentTurn: _Color;
     board: Array<Array<[] | [_Piece]>>;
 }): {
@@ -392,6 +414,7 @@ function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint
     whitePlayer: Principal;
     blackPlayer: Principal;
     winner?: Color;
+    enPassantTarget?: Position;
     currentTurn: Color;
     board: Array<Array<Piece | null>>;
 } {
@@ -400,8 +423,9 @@ function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint
         whitePlayer: value.whitePlayer,
         blackPlayer: value.blackPlayer,
         winner: record_opt_to_undefined(from_candid_opt_n9(_uploadFile, _downloadFile, value.winner)),
+        enPassantTarget: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.enPassantTarget)),
         currentTurn: from_candid_Color_n10(_uploadFile, _downloadFile, value.currentTurn),
-        board: from_candid_vec_n12(_uploadFile, _downloadFile, value.board)
+        board: from_candid_vec_n13(_uploadFile, _downloadFile, value.board)
     };
 }
 function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -411,7 +435,7 @@ function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): Color {
     return "black" in value ? Color.black : "white" in value ? Color.white : value;
 }
-function from_candid_variant_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     king: null;
 } | {
     pawn: null;
@@ -435,16 +459,19 @@ function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Array<[] | [_Piece]>>): Array<Array<Piece | null>> {
-    return value.map((x)=>from_candid_vec_n13(_uploadFile, _downloadFile, x));
+function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Array<[] | [_Piece]>>): Array<Array<Piece | null>> {
+    return value.map((x)=>from_candid_vec_n14(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[] | [_Piece]>): Array<Piece | null> {
-    return value.map((x)=>from_candid_opt_n14(_uploadFile, _downloadFile, x));
+function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[] | [_Piece]>): Array<Piece | null> {
+    return value.map((x)=>from_candid_opt_n15(_uploadFile, _downloadFile, x));
+}
+function to_candid_AIMatchResult_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AIMatchResult): _AIMatchResult {
+    return to_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Principal | null): [] | [Principal] {
+function to_candid_opt_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Principal | null): [] | [Principal] {
     return value === null ? candid_none() : candid_some(value);
 }
 function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
@@ -460,6 +487,21 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         user: null
     } : value == UserRole.guest ? {
         guest: null
+    } : value;
+}
+function to_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AIMatchResult): {
+    win: null;
+} | {
+    draw: null;
+} | {
+    loss: null;
+} {
+    return value == AIMatchResult.win ? {
+        win: null
+    } : value == AIMatchResult.draw ? {
+        draw: null
+    } : value == AIMatchResult.loss ? {
+        loss: null
     } : value;
 }
 export interface CreateActorOptions {

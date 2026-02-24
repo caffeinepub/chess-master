@@ -1,33 +1,61 @@
 {
   "kind": "build_request",
-  "title": "Fix logo not updating",
+  "title": "Rebuild Chess Khelo Online app",
   "projectName": "Chess Khelo Online",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the application logo so that it updates and displays correctly — ensure the logo asset reference in the HTML entry point and any React components that render the logo reflect the current/correct logo file and do not serve a stale or missing image.",
-      "target": "frontend",
+      "text": "Rebuild and restore the full Chess Khelo Online application with all existing features: local two-player mode, vs AI mode, auto-play mode, online multiplayer mode, leaderboard, player stats, user profiles with display names, Internet Identity authentication, chess clocks, move sound effects, background music, game result panels, and mobile-friendly layout.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "logo not update"
+          "create app"
         ]
       },
       "acceptanceCriteria": [
-        "The logo is visible and displays the correct, up-to-date image in the browser.",
-        "No broken image icon or stale cached logo appears on page load or refresh.",
-        "The logo asset path in index.html (favicon) and any logo rendered in the UI matches the intended image file.",
-        "The logo updates consistently across hard refresh and normal navigation."
+        "All four game modes (Two Players, vs AI, Auto Play, Online) are selectable and functional",
+        "Chess board renders correctly with valid move highlighting, check indicators, and last-move overlays",
+        "AI opponent uses minimax with alpha-beta pruning and makes legal moves",
+        "Online multiplayer allows creating and joining games via shareable game IDs",
+        "Internet Identity login/logout works and gating authenticated features",
+        "Player stats (points, wins, games played) display for authenticated users",
+        "Leaderboard fetches and displays global rankings",
+        "Profile setup modal prompts new users to enter a display name",
+        "Chess clocks count down per player during timed games",
+        "Move sound and background music toggles work",
+        "Game result panel shows outcome, points earned, and new game option",
+        "App is accessible and usable on mobile browsers"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Maintain a dismissible mobile banner informing users that no native APK is available and suggesting 'Add to Home Screen' as an alternative; dismissed state must persist in localStorage.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Banner is visible only on mobile viewports when not previously dismissed",
+        "Dismissing the banner persists the state so it does not reappear on reload",
+        "Banner copy clearly states APK is unavailable and recommends Add to Home Screen"
       ]
     }
   ],
-  "constraints": [],
+  "constraints": [
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "All backend logic must remain in a single Motoko actor in backend/main.mo",
+    "Use Internet Identity as the only authentication method"
+  ],
   "nonGoals": [
-    "Changing the logo design or branding beyond fixing the display/update issue.",
-    "Backend changes."
+    "Generating a native Android APK",
+    "Adding new game modes or features beyond what already exists",
+    "Integrating third-party authentication providers"
   ],
   "imageRequirements": {
     "required": [],

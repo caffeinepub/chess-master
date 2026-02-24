@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { PlayerStats } from '../backend';
-import type { Principal } from '@icp-sdk/core/principal';
+import { PlayerStats } from '../backend';
+import type { Principal } from '@dfinity/principal';
 
 export function useLeaderboard() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -9,8 +9,9 @@ export function useLeaderboard() {
   return useQuery<Array<[Principal, PlayerStats]>>({
     queryKey: ['leaderboard'],
     queryFn: async () => {
-      if (!actor) return [];
-      return actor.getLeaderboard();
+      if (!actor) throw new Error('Actor not available');
+      const data = await actor.getLeaderboard();
+      return data as Array<[Principal, PlayerStats]>;
     },
     enabled: !!actor && !actorFetching,
     refetchInterval: 60000,

@@ -10,6 +10,9 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type AIMatchResult = { 'win' : null } |
+  { 'draw' : null } |
+  { 'loss' : null };
 export type Color = { 'black' : null } |
   { 'white' : null };
 export interface GameState {
@@ -17,6 +20,7 @@ export interface GameState {
   'whitePlayer' : Principal,
   'blackPlayer' : Principal,
   'winner' : [] | [Color],
+  'enPassantTarget' : [] | [Position],
   'currentTurn' : Color,
   'board' : Array<Array<[] | [Piece]>>,
 }
@@ -52,10 +56,11 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getGameState' : ActorMethod<[string], [] | [GameState]>,
   'getLeaderboard' : ActorMethod<[], Array<[Principal, PlayerStats]>>,
-  'getPlayerStats' : ActorMethod<[Principal], [] | [PlayerStats]>,
+  'getPlayerStats' : ActorMethod<[], PlayerStats>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'joinGame' : ActorMethod<[string], undefined>,
+  'recordAIMatchResult' : ActorMethod<[AIMatchResult], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateStats' : ActorMethod<
     [[] | [Principal], Principal, Principal, boolean],

@@ -1,84 +1,93 @@
 import React from 'react';
-import type { GameResult, DrawReason } from '../types/chess';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Trophy, Handshake, Star } from 'lucide-react';
+import { GameResult, DrawReason } from '../types/chess';
+import { Trophy, Minus, X } from 'lucide-react';
 
 interface GameResultsPanelProps {
-  open: boolean;
-  gameOver: GameResult;
-  drawReason?: DrawReason;
-  pointsEarned: number;
-  isAuthenticated: boolean;
+  result: GameResult;
+  drawReason: DrawReason;
+  pointsEarned?: number;
   onNewGame: () => void;
-  onClose: () => void;
+  onClose?: () => void;
+  currentPlayerColor?: 'white' | 'black' | null;
 }
 
 export default function GameResultsPanel({
-  open,
-  gameOver,
+  result,
   drawReason,
   pointsEarned,
-  isAuthenticated,
   onNewGame,
   onClose,
+  currentPlayerColor,
 }: GameResultsPanelProps) {
-  const getMessage = () => {
-    if (gameOver === 'draw') {
-      if (drawReason === 'threefold') return 'Draw – Threefold Repetition!';
-      return 'Draw – Stalemate!';
-    }
-    if (gameOver === 'white') return 'White Wins!';
-    if (gameOver === 'black') return 'Black Wins!';
-    return 'Game Over';
-  };
+  const isWin = currentPlayerColor && result === currentPlayerColor;
+  const isDraw = result === 'draw';
+  const isLoss = currentPlayerColor && !isDraw && result !== currentPlayerColor;
 
-  const getIcon = () => {
-    if (gameOver === 'draw') return <Handshake size={40} className="text-chess-gold/80" />;
-    return <Trophy size={40} className="text-chess-gold" />;
-  };
+  let title = '';
+  let subtitle = '';
+  let icon: React.ReactNode = null;
+  let colorClass = '';
+
+  if (isDraw) {
+    title = 'Draw!';
+    subtitle =
+      drawReason === 'stalemate'
+        ? 'Stalemate'
+        : drawReason === 'threefold-repetition'
+        ? 'Threefold Repetition'
+        : 'Game Drawn';
+    icon = <Minus size={48} className="text-chess-accent" />;
+    colorClass = 'text-chess-accent';
+  } else if (isWin) {
+    title = 'You Win!';
+    subtitle = 'Congratulations!';
+    icon = <Trophy size={48} className="text-yellow-400" />;
+    colorClass = 'text-yellow-400';
+  } else if (isLoss) {
+    title = 'You Lose';
+    subtitle = 'Better luck next time!';
+    icon = <X size={48} className="text-red-400" />;
+    colorClass = 'text-red-400';
+  } else {
+    title =
+      result === 'white' ? 'White Wins!' : result === 'black' ? 'Black Wins!' : 'Game Over';
+    subtitle = '';
+    icon = <Trophy size={48} className="text-yellow-400" />;
+    colorClass = 'text-yellow-400';
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-chess-dark border border-chess-gold/40 text-chess-cream max-w-sm text-center">
-        <DialogHeader>
-          <div className="flex justify-center mb-2">{getIcon()}</div>
-          <DialogTitle className="text-chess-gold font-playfair text-2xl text-center">
-            {getMessage()}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-2">
-          {isAuthenticated && pointsEarned > 0 && (
-            <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-chess-gold/10 border border-chess-gold/30">
-              <Star size={18} className="text-chess-gold" />
-              <span className="text-chess-gold font-bold text-lg">+{pointsEarned} points earned!</span>
-            </div>
-          )}
-          {!isAuthenticated && (
-            <p className="text-chess-cream/60 text-sm">Login to earn points and track your wins!</p>
-          )}
-          <div className="flex gap-3">
-            <Button
-              onClick={onNewGame}
-              className="flex-1 bg-chess-gold text-chess-dark hover:bg-chess-gold/90 font-semibold"
-            >
-              New Game
-            </Button>
-            <Button
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-chess-panel text-chess-panel-fg rounded-2xl shadow-2xl max-w-xs w-full p-6 flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-2">
+          {icon}
+          <h2 className={`text-2xl font-bold font-display ${colorClass}`}>{title}</h2>
+          {subtitle && <p className="text-sm text-chess-muted">{subtitle}</p>}
+        </div>
+
+        {pointsEarned !== undefined && pointsEarned > 0 && (
+          <div className="bg-chess-accent/20 rounded-lg px-4 py-2 text-center">
+            <span className="text-chess-accent font-bold text-lg">+{pointsEarned} pts</span>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 w-full">
+          <button
+            onClick={onNewGame}
+            className="w-full min-h-[48px] bg-chess-accent text-chess-accent-fg rounded-lg font-semibold hover:opacity-90 transition-opacity"
+          >
+            New Game
+          </button>
+          {onClose && (
+            <button
               onClick={onClose}
-              variant="outline"
-              className="flex-1 border-chess-gold/40 text-chess-gold/80 hover:bg-chess-gold/10"
+              className="w-full min-h-[48px] bg-chess-hover text-chess-panel-fg rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
               Close
-            </Button>
-          </div>
+            </button>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

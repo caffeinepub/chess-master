@@ -1,40 +1,74 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T14:25:50.059Z",
-  "summary": "The diff modifies frontend/index.html to reference a new favicon path (/assets/chess khelo online.png), which addresses part of REQ-1 (the favicon/logo asset path in index.html). However, there is no evidence in the diff of any React component being updated to render the correct logo image in the UI. The frontend-file-summaries.txt does not mention any logo component changes, and no logo asset file is added. The fix appears partial — only the HTML favicon reference is updated.",
+  "generatedAt": "2026-02-24T17:45:07.382Z",
+  "summary": "The diff implements a substantial rebuild of the Chess Khelo Online application. Most requirements from REQ-1 and REQ-2 appear to be addressed. REQ-2 (dismissible mobile banner) is fully implemented in MobileAppNotice.tsx. REQ-1 core UI components (board, squares, game mode selector, results panel, status, leaderboard, player stats, profile setup, online setup, login, background music, move sound) are all present. However, the diff is noted as truncated with 13 modified files omitted, meaning the main game logic (ChessGame page, AI minimax, chess engine/types, backend Motoko actor) cannot be verified from the provided diff.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Any React components that render the logo should reflect the current/correct logo file and not serve a stale or missing image.",
-      "reason": "The diff only updates the favicon reference in index.html. There is no evidence in the diff that any React component (e.g., a logo component or header) was updated to display the correct logo image in the UI.",
+      "requirement": "AI opponent uses minimax with alpha-beta pruning and makes legal moves",
+      "reason": "No AI logic or chess engine file is visible in the diff. The ChessGame page and any AI implementation files are among the 13 omitted modified files, so this cannot be confirmed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Chess clocks count down per player during timed games",
+      "reason": "GameStatus.tsx renders clock display but no clock countdown logic (timer hook or interval) is visible in the diff. The actual countdown implementation would likely be in ChessGame or a dedicated hook, which are in omitted files.",
       "evidence": [
-        "frontend/index.html",
-        "frontend-file-summaries.txt"
+        "frontend/src/components/GameStatus.tsx"
       ]
     },
     {
       "id": "REQ-1",
-      "requirement": "The logo asset file itself should be present/added so the reference does not result in a broken image.",
-      "reason": "The diff shows no new image asset files were added (ADDED FILES: none), yet the favicon now references /assets/chess khelo online.png. Without the asset being added, the favicon reference may still result in a broken/missing image.",
-      "evidence": [
-        "frontend/index.html"
-      ]
-    }
-  ],
-  "hallucinated_features": [
+      "requirement": "All backend logic must remain in a single Motoko actor in backend/main.mo",
+      "reason": "The diff contains no changes to backend/main.mo and the file is not listed among modified files. It is unclear if the backend was updated to support all required features.",
+      "evidence": []
+    },
     {
-      "description": "Extensive chess game features including castling rights, AI improvements, last-move highlights, sound hooks, background music hooks, game mode selector, and start game flow were modified or added.",
-      "reason": "The build request is scoped solely to fixing the logo display/update issue. None of these chess game feature changes were requested.",
+      "id": "REQ-1",
+      "requirement": "Online multiplayer allows creating and joining games via shareable game IDs with full game play",
+      "reason": "OnlineGameSetup.tsx is present and truncated, and useOnlineGame.ts hook exists. However, the actual online game board/play component handling moves synced via backend is in omitted files and cannot be verified.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/components/OnlineGameSetup.tsx",
+        "frontend/src/hooks/useOnlineGame.ts"
       ]
     }
   ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/ChessBoard.tsx",
+    "frontend/src/components/ChessSquare.tsx",
+    "frontend/src/components/GameModeSelector.tsx",
+    "frontend/src/components/GameResultsPanel.tsx",
+    "frontend/src/components/GameStatus.tsx",
+    "frontend/src/components/Leaderboard.tsx",
+    "frontend/src/components/LoginButton.tsx",
+    "frontend/src/components/MobileAppNotice.tsx",
+    "frontend/src/components/OnlineGameSetup.tsx",
+    "frontend/src/components/PlayerIdentity.tsx",
+    "frontend/src/components/PlayerStats.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/hooks/useBackgroundMusic.ts",
+    "frontend/src/hooks/useGetCallerUserProfile.ts",
+    "frontend/src/hooks/useLeaderboard.ts",
+    "frontend/src/hooks/useMoveSound.ts",
+    "frontend/src/hooks/useOnlineGame.ts",
+    "frontend/src/hooks/usePlayerStats.ts",
+    "frontend/src/index.css",
+    "frontend/src/pages/ChessGame.tsx",
+    "frontend/src/pages/OnlineChessGame.tsx",
+    "frontend/src/types/chess.ts",
+    "frontend/src/utils/ai-player.ts",
+    "frontend/src/utils/backend-sync.ts",
+    "frontend/src/utils/chess-setup.ts",
+    "frontend/src/utils/game-status.ts",
+    "frontend/src/utils/move-validation.ts",
+    "frontend/src/utils/position-tracker.ts",
+    "frontend/src/utils/urlParams.ts",
+    "frontend/src/utils/valid-moves.ts",
     "project_state.json"
   ]
 }

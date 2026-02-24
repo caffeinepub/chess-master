@@ -1,25 +1,36 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { PlayerStats, AIMatchResult } from '../backend';
 import { useInternetIdentity } from './useInternetIdentity';
-import type { PlayerStats } from '../backend';
 
 export function usePlayerStats() {
   const { actor, isFetching: actorFetching } = useActor();
   const { identity } = useInternetIdentity();
 
-  const principal = identity?.getPrincipal();
-
-  return useQuery<PlayerStats | null>({
-    queryKey: ['playerStats', principal?.toString()],
+  return useQuery<PlayerStats>({
+    queryKey: ['playerStats'],
     queryFn: async () => {
-      if (!actor || !principal) return null;
-      try {
-        return await actor.getPlayerStats(principal);
-      } catch {
-        return null;
-      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getPlayerStats();
     },
-    enabled: !!actor && !actorFetching && !!principal,
+    enabled: !!actor && !actorFetching && !!identity,
+    retry: 2,
     refetchInterval: 30000,
+  });
+}
+
+export function useRecordAIMatchResult() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (result: AIMatchResult) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.recordAIMatchResult(result);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playerStats'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
   });
 }

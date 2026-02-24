@@ -1,32 +1,196 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix logo not updating",
+  "title": "Rebuild Chess Khelo Online Frontend",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Fix the application logo so that it updates and displays correctly in both the HTML entry point and any React components that render the logo",
+      "summary": "Rebuild and restore the full Chess Khelo Online application with all existing features including local two-player mode, vs AI mode, auto-play mode, online multiplayer mode, leaderboard, player stats, user profiles with display names, Internet Identity authentication, chess clocks, move sound effects, background music, game result panels, and mobile-friendly layout.",
       "acceptanceCriteria": [
-        "The logo is visible and displays the correct, up-to-date image in the browser.",
-        "No broken image icon or stale cached logo appears on page load or refresh.",
-        "The logo asset path in index.html (favicon) and any logo rendered in the UI matches the intended image file.",
-        "The logo updates consistently across hard refresh and normal navigation."
+        "All four game modes (Two Players, vs AI, Auto Play, Online) are selectable and functional",
+        "Chess board renders correctly with valid move highlighting, check indicators, and last-move overlays",
+        "AI opponent uses minimax with alpha-beta pruning and makes legal moves",
+        "Online multiplayer allows creating and joining games via shareable game IDs",
+        "Internet Identity login/logout works and gating authenticated features",
+        "Player stats (points, wins, games played) display for authenticated users",
+        "Leaderboard fetches and displays global rankings",
+        "Profile setup modal prompts new users to enter a display name",
+        "Chess clocks count down per player during timed games",
+        "Move sound and background music toggles work",
+        "Game result panel shows outcome, points earned, and new game option",
+        "App is accessible and usable on mobile browsers"
       ],
       "file_operations": [
         {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Update the favicon link href to point to the correct logo asset path. Ensure the path matches the actual logo file location in the project. Add cache-busting query parameter or update the asset reference to force browsers to reload the favicon."
-        },
-        {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Review and update any logo image references in the root component. If the logo is rendered in the UI (e.g., as an img element or background image), ensure the src or CSS reference points to the correct asset path and includes proper cache-busting mechanism if needed."
+          "description": "Verify the App component renders MobileAppNotice banner and ChessGame page correctly. Ensure ProfileSetupModal is integrated and conditionally shown based on authentication state and user profile status. Wire authentication flow using the authorization component to check if user profile exists after login, prompting profile setup for new users. Add QueryClientProvider and InternetIdentityProvider wrappers if not already present in main.tsx."
+        },
+        {
+          "path": "frontend/src/pages/ChessGame.tsx",
+          "operation": "modify",
+          "description": "Verify and restore all four game modes (Two Players, vs AI, Auto Play, Online) with mode selection via GameModeSelector. Ensure local game state management for board, current player, move history, selected piece, valid moves, last move, and game status. Integrate useBackgroundMusic and useMoveSound hooks for audio. Add chess clock state and countdown logic for timed games. Wire GameResultsPanel to display outcome with points earned and new game option. Implement auto-play mode logic with periodic AI vs AI moves. Handle AI match result recording via usePlayerStats when vs AI game completes. Ensure mobile-friendly responsive layout with touch-friendly controls."
+        },
+        {
+          "path": "frontend/src/pages/OnlineChessGame.tsx",
+          "operation": "modify",
+          "description": "Verify online multiplayer game page implementation using useOnlineGame hook. Ensure game state synchronization with backend via polling. Implement local optimistic move updates with backend sync. Add threefold repetition detection using position-tracker utilities. Wire GameResultsPanel for game-over display. Ensure only authenticated users can play online games by checking authentication state. Add navigation back to mode selection when game ends."
+        },
+        {
+          "path": "frontend/src/components/GameModeSelector.tsx",
+          "operation": "modify",
+          "description": "Verify four-button grid selector renders correctly with Two Players, vs AI, Auto Play, and Online modes. Ensure minimum 44px touch targets for mobile accessibility. Add active state styling. For Online mode, show authentication requirement message if user is not logged in using the authorization component's authentication check."
+        },
+        {
+          "path": "frontend/src/components/OnlineGameSetup.tsx",
+          "operation": "modify",
+          "description": "Verify UI for creating or joining online multiplayer games. Ensure authenticated users can generate shareable game IDs or enter opponent IDs. Display login-required messaging for unauthenticated users using the authorization component. Wire game creation and joining via useOnlineGame hook mutations."
+        },
+        {
+          "path": "frontend/src/components/ChessBoard.tsx",
+          "operation": "modify",
+          "description": "Verify 8x8 chess board grid renders correctly using ChessSquare components. Ensure responsive sizing for mobile and desktop. Add overlays for AI thinking state and game-over state. Disable interaction during AI turns or when game has ended. Ensure board orientation can flip for black player in online games."
+        },
+        {
+          "path": "frontend/src/components/ChessSquare.tsx",
+          "operation": "modify",
+          "description": "Verify individual square component renders piece Unicode symbols correctly. Ensure highlight overlays display for selection, check, last-move, and valid-move states. Add edge coordinate labels (a-h, 1-8) with responsive font sizing. Ensure click handling for piece selection and move execution."
+        },
+        {
+          "path": "frontend/src/components/GameStatus.tsx",
+          "operation": "modify",
+          "description": "Verify game status bar displays white and black chess clocks with countdown timers. Show status messages for check, AI thinking, game over, and turn indicators. Add mute toggle button for background music using useBackgroundMusic hook controls."
+        },
+        {
+          "path": "frontend/src/components/GameResultsPanel.tsx",
+          "operation": "modify",
+          "description": "Verify modal overlay component displays game outcome (win/loss/draw) with appropriate icon and title. Show points earned for the outcome. Add buttons to start a new game or close the panel. Ensure panel displays after game concludes in all modes."
+        },
+        {
+          "path": "frontend/src/components/Leaderboard.tsx",
+          "operation": "modify",
+          "description": "Verify scrollable leaderboard table fetches data via useLeaderboard hook. Display rank icons, player names (from profiles) or truncated principal IDs, points, wins, and games played. Ensure table is responsive and mobile-friendly. Add loading and error states."
+        },
+        {
+          "path": "frontend/src/components/PlayerStats.tsx",
+          "operation": "modify",
+          "description": "Verify player stats component displays authenticated user's points, wins, and games played as badge-style indicators. Fetch data via usePlayerStats hook. Show loading state while fetching. Hide component when user is not authenticated using authorization component's authentication check. Add error/retry states."
         },
         {
           "path": "frontend/src/components/PlayerIdentity.tsx",
           "operation": "modify",
-          "description": "Check if this component or any other header/navigation components render the application logo. If found, update the logo asset reference to match the correct file path and ensure it displays the current logo image."
+          "description": "Verify component displays authenticated user's display name from profile or truncated principal ID. Show user icon. Render nothing if not logged in using authorization component's authentication check. Fetch profile via useGetCallerUserProfile hook."
+        },
+        {
+          "path": "frontend/src/components/LoginButton.tsx",
+          "operation": "modify",
+          "description": "Verify authentication button triggers Internet Identity login or logout using the authorization component's authentication system. Show loading state during login process. Display appropriate icons and text for logged-in and logged-out states. Clear React Query cache on logout as per authorization component usage instructions."
+        },
+        {
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "operation": "modify",
+          "description": "Verify modal dialog prompts new users to enter display name (2-30 characters). Save profile via backend actor using saveCallerUserProfile method from the authorization component. Call onComplete callback when profile is saved successfully. Prevent modal flash by checking actor availability before showing as per authorization component usage instructions."
+        },
+        {
+          "path": "frontend/src/hooks/useGetCallerUserProfile.ts",
+          "operation": "modify",
+          "description": "Verify hook fetches current user's profile via actor.getCallerUserProfile() using React Query. Implement proper loading state handling that accounts for actor fetching state as per authorization component usage instructions to prevent profile setup modal flash. Return custom state with isLoading and isFetched flags."
+        },
+        {
+          "path": "frontend/src/hooks/usePlayerStats.ts",
+          "operation": "modify",
+          "description": "Verify hooks fetch authenticated player's stats via actor.getPlayerStats() and record AI match results via actor.recordAIMatchResult(). Invalidate stats and leaderboard queries on successful mutation. Add proper error handling."
+        },
+        {
+          "path": "frontend/src/hooks/useLeaderboard.ts",
+          "operation": "modify",
+          "description": "Verify hook fetches global leaderboard via actor.getLeaderboard() using React Query. Configure to refresh every 60 seconds. Return array of [Principal, PlayerStats] pairs with loading and error states."
+        },
+        {
+          "path": "frontend/src/hooks/useOnlineGame.ts",
+          "operation": "modify",
+          "description": "Verify hook manages online game state by polling backend via actor.getGameState() every 1.5 seconds. Expose mutations for actor.createGame() and actor.joinGame(). Handle loading and error states. Invalidate game state query on successful mutations."
+        },
+        {
+          "path": "frontend/src/hooks/useBackgroundMusic.ts",
+          "operation": "modify",
+          "description": "Verify hook generates and schedules looping ambient chess background music using Web Audio API. Provide start, stop, and toggle mute controls. Ensure music loops seamlessly."
+        },
+        {
+          "path": "frontend/src/hooks/useMoveSound.ts",
+          "operation": "modify",
+          "description": "Verify hook synthesizes short percussive chess-piece move sound using Web Audio API with layered oscillators and noise burst. Ensure sound plays on valid moves."
+        },
+        {
+          "path": "frontend/src/utils/ai-player.ts",
+          "operation": "modify",
+          "description": "Verify AI chess engine implements minimax algorithm with alpha-beta pruning. Include material evaluation and positional bonus tables for each piece type. Ensure AI makes legal moves and evaluates board positions correctly."
+        },
+        {
+          "path": "frontend/src/utils/move-validation.ts",
+          "operation": "modify",
+          "description": "Verify chess move validation logic for all piece types (king, queen, rook, bishop, knight, pawn). Include helpers for blocking, capturing, and en passant. Ensure isValidMove dispatcher works correctly for all pieces."
+        },
+        {
+          "path": "frontend/src/utils/valid-moves.ts",
+          "operation": "modify",
+          "description": "Verify computation of all legal moves for a piece or player by combining move validation with check detection and castling rights. Expose helpers for single-piece moves, all-player moves, and move-existence queries."
+        },
+        {
+          "path": "frontend/src/utils/game-status.ts",
+          "operation": "modify",
+          "description": "Verify determination of current game status (playing, check, checkmate, stalemate, or draw) based on board state, current player, and optional draw reason. Ensure checkmate and stalemate detection work correctly."
+        },
+        {
+          "path": "frontend/src/utils/position-tracker.ts",
+          "operation": "modify",
+          "description": "Verify utilities serialize board positions, track position history in a map, and detect threefold repetition for draw conditions. Ensure position hashing is consistent and repetition detection is accurate."
+        },
+        {
+          "path": "frontend/src/utils/backend-sync.ts",
+          "operation": "modify",
+          "description": "Verify utility functions convert between frontend Unicode chess piece representations and backend structured Piece objects for board synchronization. Ensure bidirectional conversion handles all piece types and colors correctly."
+        },
+        {
+          "path": "frontend/src/utils/chess-setup.ts",
+          "operation": "modify",
+          "description": "Verify initial board setup function creates correct starting position with all pieces in standard chess formation. Ensure helper utilities identify piece color from Unicode chess symbols accurately."
+        },
+        {
+          "path": "frontend/src/utils/urlParams.ts",
+          "operation": "modify",
+          "description": "Verify utility functions read URL query and hash parameters for game IDs and persist them via sessionStorage. Include helpers to store, retrieve, and clear parameters for online game joining."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Verify global stylesheet sets up Tailwind CSS imports and custom CSS variables for dark chess-themed color scheme. Ensure mobile-first responsive rules, chess board and piece styles, highlight overlays, and animations are defined. Confirm OKLCH-based design tokens for light and dark themes are configured correctly."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Verify Tailwind CSS configuration defines custom breakpoints for responsive design, OKLCH-based color tokens, typography fonts, border radii, box shadows, and accordion animations. Ensure configuration supports mobile-friendly layouts."
+        },
+        {
+          "path": "frontend/src/types/chess.ts",
+          "operation": "modify",
+          "description": "Verify TypeScript type definitions for chess pieces, board, players, game modes, results, positions, castling rights, and game state. Ensure types match backend interface definitions and support all game features."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Maintain a dismissible mobile banner informing users that no native APK is available and suggesting 'Add to Home Screen' as an alternative; dismissed state must persist in localStorage.",
+      "acceptanceCriteria": [
+        "Banner is visible only on mobile viewports when not previously dismissed",
+        "Dismissing the banner persists the state so it does not reappear on reload",
+        "Banner copy clearly states APK is unavailable and recommends Add to Home Screen"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/MobileAppNotice.tsx",
+          "operation": "modify",
+          "description": "Verify dismissible banner component is shown only on mobile viewports (max-width breakpoint check). Ensure banner displays message that no APK is available and suggests using 'Add to Home Screen' as an alternative. Implement dismiss button that sets a localStorage flag to persist dismissed state. Check localStorage on mount to hide banner if previously dismissed. Ensure banner styling is mobile-friendly and does not obstruct game content."
         }
       ]
     }

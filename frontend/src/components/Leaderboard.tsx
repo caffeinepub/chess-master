@@ -1,63 +1,82 @@
 import React from 'react';
 import { useLeaderboard } from '../hooks/useLeaderboard';
-import { Trophy, Star, Gamepad2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useActor } from '../hooks/useActor';
+import { Trophy, Medal, Award } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface LeaderboardProps {
-  userProfiles?: Map<string, string>;
+function RankIcon({ rank }: { rank: number }) {
+  if (rank === 1) return <Trophy size={14} className="text-yellow-400" />;
+  if (rank === 2) return <Medal size={14} className="text-gray-300" />;
+  if (rank === 3) return <Award size={14} className="text-amber-600" />;
+  return <span className="text-xs text-chess-muted w-3.5 text-center">{rank}</span>;
 }
 
-export default function Leaderboard({ userProfiles }: LeaderboardProps) {
-  const { data: leaderboard, isLoading } = useLeaderboard();
+export default function Leaderboard() {
+  const { data: leaderboard, isLoading, isError } = useLeaderboard();
+  const { actor } = useActor();
 
-  const sorted = leaderboard
-    ? [...leaderboard].sort((a, b) => Number(b[1].points) - Number(a[1].points))
-    : [];
+  // Fetch profiles for display names
+  const { data: profiles } = useQuery({
+    queryKey: ['leaderboardProfiles', leaderboard?.map(([p]) => p.toString())],
+    queryFn: async () => {
+      if (!actor || !leaderboard) return {};
+      const map: Record<string, string> = {};
+      await Promise.all(
+        leaderboard.map(async ([principal]) => {
+          try {
+            const profile = await actor.getUserProfile(principal);
+            if (profile?.name) map[principal.toString()] = profile.name;
+          } catch {
+            // ignore
+          }
+        })
+      );
+      return map;
+    },
+    enabled: !!actor && !!leaderboard && leaderboard.length > 0,
+  });
 
-  const getDisplayName = (principal: { toString(): string }) => {
-    const p = principal.toString();
-    if (userProfiles?.has(p)) return userProfiles.get(p)!;
-    return `${p.slice(0, 5)}…${p.slice(-4)}`;
-  };
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2 p-4">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="h-8 bg-chess-hover rounded animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <p className="text-center text-sm text-chess-muted p-4">Failed to load leaderboard.</p>;
+  }
+
+  const sorted = [...(leaderboard ?? [])].sort((a, b) => Number(b[1].points) - Number(a[1].points));
+
+  if (sorted.length === 0) {
+    return <p className="text-center text-sm text-chess-muted p-4">No players yet. Be the first!</p>;
+  }
 
   return (
-    <div className="rounded-xl border border-chess-gold/30 bg-chess-dark/80 overflow-hidden">
-      <div className="px-4 py-3 border-b border-chess-gold/20 flex items-center gap-2">
-        <Trophy size={16} className="text-chess-gold" />
-        <h3 className="text-chess-gold font-playfair font-semibold text-sm">Leaderboard</h3>
-      </div>
-      {isLoading ? (
-        <div className="p-4 text-center text-chess-cream/50 text-sm">Loading…</div>
-      ) : sorted.length === 0 ? (
-        <div className="p-4 text-center text-chess-cream/50 text-sm">No players yet. Be the first!</div>
-      ) : (
-        <ScrollArea className="max-h-64">
-          <div className="divide-y divide-chess-gold/10">
-            {sorted.slice(0, 20).map(([principal, stats], idx) => (
-              <div key={principal.toString()} className="flex items-center gap-3 px-4 py-2.5">
-                <span className={`w-6 text-center text-xs font-bold ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-chess-cream/40'}`}>
-                  {idx + 1}
-                </span>
-                <span className="flex-1 text-chess-cream/90 text-sm truncate">
-                  {getDisplayName(principal)}
-                </span>
-                <span className="flex items-center gap-1 text-chess-gold text-xs">
-                  <Star size={11} />
-                  {stats.points.toString()}
-                </span>
-                <span className="flex items-center gap-1 text-chess-cream/50 text-xs">
-                  <Trophy size={11} />
-                  {stats.wins.toString()}
-                </span>
-                <span className="flex items-center gap-1 text-chess-cream/40 text-xs">
-                  <Gamepad2 size={11} />
-                  {stats.gamesPlayed.toString()}
-                </span>
+    <ScrollArea className="h-64">
+      <div className="flex flex-col gap-1 p-2">
+        {sorted.map(([principal, stats], idx) => {
+          const rank = idx + 1;
+          const pid = principal.toString();
+          const name = profiles?.[pid] || pid.substring(0, 8) + '…';
+          return (
+            <div key={pid} className="grid grid-cols-[24px_1fr_48px_40px_40px] items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-chess-hover transition-colors text-chess-panel-fg">
+              <div className="flex items-center justify-center shrink-0">
+                <RankIcon rank={rank} />
               </div>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
-    </div>
+              <span className="text-sm font-medium truncate">{name}</span>
+              <span className="text-xs font-bold text-chess-accent text-right">{Number(stats.points)}</span>
+              <span className="text-xs text-chess-muted text-right">{Number(stats.wins)}W</span>
+              <span className="text-xs text-chess-muted text-right">{Number(stats.gamesPlayed)}G</span>
+            </div>
+          );
+        })}
+      </div>
+    </ScrollArea>
   );
 }

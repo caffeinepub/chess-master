@@ -9,14 +9,13 @@ export default function PlayerIdentity() {
 
   if (!identity) return null;
 
-  const principal = identity.getPrincipal().toString();
-  const shortPrincipal = `${principal.slice(0, 5)}…${principal.slice(-5)}`;
-  const displayName = profile?.name || shortPrincipal;
+  const displayName = profile?.name ||
+    identity.getPrincipal().toString().substring(0, 8) + '…';
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-chess-dark/60 border border-chess-gold/20 text-sm">
-      <User size={14} className="text-chess-gold/70" />
-      <span className="text-chess-gold/90 font-medium">{displayName}</span>
+    <div className="flex items-center gap-1.5 text-chess-panel-fg shrink-0">
+      <User size={14} className="text-chess-accent shrink-0" />
+      <span className="text-sm font-medium truncate max-w-[120px]">{displayName}</span>
     </div>
   );
 }

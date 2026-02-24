@@ -2,10 +2,39 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-application-logo-so-that-it-updates-and-displays-correctly-ensure-the-logo-asset-reference-in-the-html-entry-point-and-any-react-components-that-render-the-logo-reflect-the-current-correct-logo-file-and-do-not-serve-a-stale-or-missing-image",
-      "featureTitle": "Fix the application logo so that it updates and displays correctly — ensure the logo asset reference in the HTML entry point and any React components that render the logo reflect the current/correct logo file and do not serve a stale or missing image.",
+      "featureId": "feature-rebuild-and-restore-the-full-chess-khelo-online-application-with-all-existing-features-local-two-player-mode-vs-ai-mode-auto-play-mode-online-multiplayer-mode-leaderboard-player-stats-user-profiles-with-display-names-internet-identity-authentication-chess-clocks-move-sound-effects-background-music-game-result-panels-and-mobile-friendly-layout",
+      "featureTitle": "Rebuild and restore the full Chess Khelo Online application with all existing features: local two-player mode, vs AI mode, auto-play mode, online multiplayer mode, leaderboard, player stats, user profiles with display names, Internet Identity authentication, chess clocks, move sound effects, background music, game result panels, and mobile-friendly layout.",
       "files": [
-        "frontend/index.html"
+        "frontend/src/App.tsx",
+        "frontend/src/components/ChessBoard.tsx",
+        "frontend/src/components/ChessSquare.tsx",
+        "frontend/src/components/GameModeSelector.tsx",
+        "frontend/src/components/GameResultsPanel.tsx",
+        "frontend/src/components/GameStatus.tsx",
+        "frontend/src/components/Leaderboard.tsx",
+        "frontend/src/components/LoginButton.tsx",
+        "frontend/src/components/OnlineGameSetup.tsx",
+        "frontend/src/components/PlayerIdentity.tsx",
+        "frontend/src/components/PlayerStats.tsx",
+        "frontend/src/components/ProfileSetupModal.tsx",
+        "frontend/src/hooks/useBackgroundMusic.ts",
+        "frontend/src/hooks/useGetCallerUserProfile.ts",
+        "frontend/src/hooks/useLeaderboard.ts",
+        "frontend/src/hooks/useMoveSound.ts",
+        "frontend/src/hooks/useOnlineGame.ts",
+        "frontend/src/hooks/usePlayerStats.ts",
+        "frontend/src/index.css",
+        "frontend/src/pages/ChessGame.tsx",
+        "frontend/src/pages/OnlineChessGame.tsx",
+        "frontend/src/types/chess.ts",
+        "frontend/src/utils/ai-player.ts",
+        "frontend/src/utils/backend-sync.ts",
+        "frontend/src/utils/chess-setup.ts",
+        "frontend/src/utils/game-status.ts",
+        "frontend/src/utils/move-validation.ts",
+        "frontend/src/utils/position-tracker.ts",
+        "frontend/src/utils/urlParams.ts",
+        "frontend/src/utils/valid-moves.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -17,6 +46,25 @@
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-maintain-a-dismissible-mobile-banner-informing-users-that-no-native-apk-is-available-and-suggesting-add-to-home-screen-as-an-alternative-dismissed-state-must-persist-in-localstorage",
+      "featureTitle": "Maintain a dismissible mobile banner informing users that no native APK is available and suggesting 'Add to Home Screen' as an alternative; dismissed state must persist in localStorage.",
+      "files": [
+        "frontend/src/components/MobileAppNotice.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
       ],
       "confidence": "high"
     }
