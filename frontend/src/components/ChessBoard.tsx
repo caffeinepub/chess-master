@@ -17,6 +17,7 @@ interface ChessBoardProps {
   gameOver?: GameResult;
   lastMove?: LastMove | null;
   currentPlayer?: 'white' | 'black';
+  gameStarted?: boolean;
 }
 
 const ChessBoard: React.FC<ChessBoardProps> = ({
@@ -32,6 +33,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
   gameOverMessage,
   gameOver,
   lastMove = null,
+  gameStarted = false,
 }) => {
   // Support both prop names for selected piece
   const activeSelected = selectedPiece ?? selectedPosition ?? null;
@@ -104,7 +106,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
           borderRadius: '4px',
           overflow: 'hidden',
           width: '100%',
-          opacity: isDisabled && !isOver ? 0.85 : 1,
+          opacity: isDisabled && !isOver ? 0.85 : !gameStarted ? 0.75 : 1,
           transition: 'opacity 0.2s ease',
           cursor: isDisabled ? 'not-allowed' : 'default',
           pointerEvents: isDisabled ? 'none' : 'auto',

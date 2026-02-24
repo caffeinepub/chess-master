@@ -1,58 +1,32 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix AI not making moves in 1 Player and Auto Play modes",
+  "title": "Fix logo not updating",
   "requirements": [
     {
-      "id": "REQ-24",
-      "summary": "Fix AI move trigger after human move in '1 Player' mode",
+      "id": "REQ-1",
+      "summary": "Fix the application logo so that it updates and displays correctly in both the HTML entry point and any React components that render the logo",
       "acceptanceCriteria": [
-        "After the human (White) makes any legal move in '1 Player' mode, the AI (Black) automatically computes and plays a legal move.",
-        "The AI thinking indicator is shown for 1.5–3 seconds before the AI move is committed.",
-        "The AI move sound plays when the AI move is committed.",
-        "The last-move highlight updates to reflect the AI's move.",
-        "The AI does not play when it is the human's turn or when the game is over."
+        "The logo is visible and displays the correct, up-to-date image in the browser.",
+        "No broken image icon or stale cached logo appears on page load or refresh.",
+        "The logo asset path in index.html (favicon) and any logo rendered in the UI matches the intended image file.",
+        "The logo updates consistently across hard refresh and normal navigation."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ChessGame.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Fix the AI move trigger logic in '1 Player' mode. After a human (White) move is committed, ensure the AI turn detection correctly identifies it's Black's turn and schedules the AI move with proper timing. Use useRef to store the current board state and current player to avoid stale closures in the AI move trigger setTimeout callback. Call getBestMove from frontend/src/utils/ai-player.ts with the updated board and Black player. Apply the AI's move to the board state, play the move sound, update last-move highlights, and show the AI thinking indicator for 1.5–3 seconds before committing the move. Ensure the AI does not trigger when the game is over or when it's still the human's turn."
-        }
-      ]
-    },
-    {
-      "id": "REQ-25",
-      "summary": "Fix AI move alternation in 'Auto Play' mode",
-      "acceptanceCriteria": [
-        "In 'Auto Play' mode, both White and Black AI players make moves automatically and alternately without any manual interaction.",
-        "A visible delay of 600–900ms occurs between moves so the game is watchable.",
-        "The AI thinking indicator appears before each move is committed.",
-        "Auto Play stops immediately when checkmate, stalemate, threefold repetition, or timeout is detected.",
-        "Clicking the stop/new game button halts Auto Play immediately."
-      ],
-      "file_operations": [
+          "description": "Update the favicon link href to point to the correct logo asset path. Ensure the path matches the actual logo file location in the project. Add cache-busting query parameter or update the asset reference to force browsers to reload the favicon."
+        },
         {
-          "path": "frontend/src/pages/ChessGame.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Fix the Auto Play move loop to alternate between White and Black AI moves. After each move is committed in Auto Play mode, schedule the next AI move with a 600–900ms delay. Use useRef to store the current board, current player, and game-over state to prevent stale closures in the Auto Play loop setTimeout callbacks. Call getBestMove from frontend/src/utils/ai-player.ts with the updated board and the current player (alternating White/Black). Apply the AI's move, play the move sound, update highlights, show the AI thinking indicator, and then schedule the next move. Stop the Auto Play loop immediately when checkmate, stalemate, threefold repetition, or timeout is detected, or when the user clicks stop/new game. Ensure the loop correctly alternates players and does not skip turns or stop prematurely."
-        }
-      ]
-    },
-    {
-      "id": "REQ-26",
-      "summary": "Audit and fix stale closures in useEffect hooks for AI move triggers",
-      "acceptanceCriteria": [
-        "The AI move trigger does not silently fail after any human move in '1 Player' mode.",
-        "The Auto Play loop does not silently stop mid-game due to stale state.",
-        "No console errors related to stale closures or missing React hook dependencies appear during AI or Auto Play gameplay.",
-        "The AI correctly reads the most recent board state when computing its move."
-      ],
-      "file_operations": [
+          "description": "Review and update any logo image references in the root component. If the logo is rendered in the UI (e.g., as an img element or background image), ensure the src or CSS reference points to the correct asset path and includes proper cache-busting mechanism if needed."
+        },
         {
-          "path": "frontend/src/pages/ChessGame.tsx",
+          "path": "frontend/src/components/PlayerIdentity.tsx",
           "operation": "modify",
-          "description": "Audit all useEffect hooks and async callbacks in ChessGame.tsx that trigger AI moves (both '1 Player' and 'Auto Play' modes). Identify and fix stale closure issues by using useRef for mutable values that are read inside setTimeout or async callbacks, including current board state, current player, game-over status, and game mode. Ensure useEffect dependency arrays include all necessary dependencies or use refs to access the latest state. Verify that AI move triggers correctly read the most recent board state and player turn when scheduling or executing moves. Fix any race conditions caused by asynchronous state updates that could drop AI move triggers or cause the Auto Play loop to stop prematurely. Ensure no silent failures occur during AI gameplay."
+          "description": "Check if this component or any other header/navigation components render the application logo. If found, update the logo asset reference to match the correct file path and ensure it displays the current logo image."
         }
       ]
     }

@@ -1,4 +1,4 @@
-import { Board, Position, Player } from '../types/chess';
+import { Board, Position, Player, CastlingRights } from '../types/chess';
 import { isWhitePiece, isBlackPiece, getPieceColor } from './chess-setup';
 
 export function isSameColorPiece(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
@@ -11,12 +11,11 @@ export function isSameColorPiece(board: Board, fromRow: number, fromCol: number,
 }
 
 export function isValidKnightMove(piece: string, fromRow: number, fromCol: number, toRow: number, toCol: number): boolean {
-  if (piece !== '♘' && piece !== '♞') return false; // only knights
+  if (piece !== '♘' && piece !== '♞') return false;
 
   const rowDiff = Math.abs(toRow - fromRow);
   const colDiff = Math.abs(toCol - fromCol);
 
-  // L-shape: 2 + 1
   if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
     return true;
   }
@@ -80,25 +79,22 @@ export function isValidPawnMove(
   toCol: number
 ): boolean {
   const isWhite = isWhitePiece(piece);
-  const direction = isWhite ? 1 : -1; // white moves up (increasing row), black moves down
+  const direction = isWhite ? 1 : -1;
   const startRow = isWhite ? 1 : 6;
 
   const rowDiff = toRow - fromRow;
   const colDiff = Math.abs(toCol - fromCol);
 
-  // Forward move (no capture)
   if (colDiff === 0) {
     if (rowDiff === direction) {
       return board[toRow][toCol] === null;
     }
-    // Double move from start
     if (rowDiff === 2 * direction && fromRow === startRow) {
       return board[toRow][toCol] === null && board[fromRow + direction][fromCol] === null;
     }
     return false;
   }
 
-  // Diagonal capture
   if (colDiff === 1 && rowDiff === direction) {
     const target = board[toRow][toCol];
     if (target !== null) {
@@ -120,13 +116,8 @@ export function isValidMove(
   const piece = board[fromRow][fromCol];
   if (!piece) return false;
 
-  // Can't move to same square
   if (fromRow === toRow && fromCol === toCol) return false;
-
-  // Can't capture own piece
   if (isSameColorPiece(board, fromRow, fromCol, toRow, toCol)) return false;
-
-  // Bounds check
   if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7) return false;
 
   switch (piece) {
@@ -196,4 +187,144 @@ export function wouldLeaveKingInCheck(
 ): boolean {
   const newBoard = applyMove(board, fromRow, fromCol, toRow, toCol);
   return isKingInCheck(newBoard, player);
+}
+
+// ─── Castling helpers ──────────────────────────────────────────────────────
+
+/**
+ * Returns true if the player can castle kingside.
+ * Conditions: rights granted, squares f & g empty, king not in check,
+ * king does not pass through f or land on g while under attack.
+ */
+export function canCastleKingside(board: Board, player: Player, castlingRights: CastlingRights): boolean {
+  const opponent: Player = player === 'white' ? 'black' : 'white';
+  const row = player === 'white' ? 0 : 7;
+  const hasRight = player === 'white' ? castlingRights.whiteKingside : castlingRights.blackKingside;
+
+  if (!hasRight) return false;
+
+  // Squares between king (col 4) and rook (col 7) must be empty: f(5) and g(6)
+  if (board[row][5] !== null || board[row][6] !== null) return false;
+
+  // King must not be in check
+  if (isKingInCheck(board, player)) return false;
+
+  // King must not pass through col 5 under attack
+  if (isSquareUnderAttack(board, row, 5, opponent)) return false;
+
+  // King must not land on col 6 under attack
+  if (isSquareUnderAttack(board, row, 6, opponent)) return false;
+
+  return true;
+}
+
+/**
+ * Returns true if the player can castle queenside.
+ * Conditions: rights granted, squares b,c,d empty, king not in check,
+ * king does not pass through d or land on c while under attack.
+ */
+export function canCastleQueenside(board: Board, player: Player, castlingRights: CastlingRights): boolean {
+  const opponent: Player = player === 'white' ? 'black' : 'white';
+  const row = player === 'white' ? 0 : 7;
+  const hasRight = player === 'white' ? castlingRights.whiteQueenside : castlingRights.blackQueenside;
+
+  if (!hasRight) return false;
+
+  // Squares between king (col 4) and rook (col 0) must be empty: b(1), c(2), d(3)
+  if (board[row][1] !== null || board[row][2] !== null || board[row][3] !== null) return false;
+
+  // King must not be in check
+  if (isKingInCheck(board, player)) return false;
+
+  // King must not pass through col 3 under attack
+  if (isSquareUnderAttack(board, row, 3, opponent)) return false;
+
+  // King must not land on col 2 under attack
+  if (isSquareUnderAttack(board, row, 2, opponent)) return false;
+
+  return true;
+}
+
+/**
+ * Detect if a king move is a castling move (king moves 2 squares horizontally).
+ */
+export function isCastlingMove(
+  board: Board,
+  fromRow: number,
+  fromCol: number,
+  toRow: number,
+  toCol: number
+): boolean {
+  const piece = board[fromRow][fromCol];
+  if (piece !== '♔' && piece !== '♚') return false;
+  if (fromRow !== toRow) return false;
+  return Math.abs(toCol - fromCol) === 2;
+}
+
+/**
+ * Apply a castling move: moves king and rook atomically.
+ * Returns the new board (Board = Square[][]).
+ */
+export function applyCastlingMove(
+  board: Board,
+  fromRow: number,
+  fromCol: number,
+  toRow: number,
+  toCol: number
+): Board {
+  const newBoard: Board = board.map(row => [...row]);
+  const isKingside = toCol > fromCol;
+
+  // Move king
+  newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
+  newBoard[fromRow][fromCol] = null;
+
+  // Move rook
+  if (isKingside) {
+    // Rook from h-file (col 7) to f-file (col 5)
+    newBoard[fromRow][5] = newBoard[fromRow][7];
+    newBoard[fromRow][7] = null;
+  } else {
+    // Rook from a-file (col 0) to d-file (col 3)
+    newBoard[fromRow][3] = newBoard[fromRow][0];
+    newBoard[fromRow][0] = null;
+  }
+
+  return newBoard;
+}
+
+/**
+ * Update castling rights after a move.
+ * Clears rights when king or rook moves from their starting squares.
+ */
+export function updateCastlingRights(
+  castlingRights: CastlingRights,
+  piece: string,
+  fromRow: number,
+  fromCol: number
+): CastlingRights {
+  const rights = { ...castlingRights };
+
+  // White king moved
+  if (piece === '♔') {
+    rights.whiteKingside = false;
+    rights.whiteQueenside = false;
+  }
+  // Black king moved
+  if (piece === '♚') {
+    rights.blackKingside = false;
+    rights.blackQueenside = false;
+  }
+  // White rooks
+  if (piece === '♖') {
+    if (fromRow === 0 && fromCol === 7) rights.whiteKingside = false;
+    if (fromRow === 0 && fromCol === 0) rights.whiteQueenside = false;
+  }
+  // Black rooks
+  if (piece === '♜') {
+    if (fromRow === 7 && fromCol === 7) rights.blackKingside = false;
+    if (fromRow === 7 && fromCol === 0) rights.blackQueenside = false;
+  }
+
+  return rights;
 }

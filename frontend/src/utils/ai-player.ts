@@ -1,6 +1,6 @@
-import { Board, Player, Position } from '../types/chess';
+import { Board, Player, Position, CastlingRights } from '../types/chess';
 import { getAllValidMovesForPlayer } from './valid-moves';
-import { applyMove, isKingInCheck } from './move-validation';
+import { applyMove, applyCastlingMove, isCastlingMove, isKingInCheck, updateCastlingRights } from './move-validation';
 import { getPieceColor } from './chess-setup';
 
 export interface AIMove {
@@ -120,6 +120,14 @@ function evaluateBoard(board: Board, player: Player): number {
   return score;
 }
 
+// Apply a move (regular or castling) and return the new board
+function applyAIMove(board: Board, fromRow: number, fromCol: number, toRow: number, toCol: number): Board {
+  if (isCastlingMove(board, fromRow, fromCol, toRow, toCol)) {
+    return applyCastlingMove(board, fromRow, fromCol, toRow, toCol);
+  }
+  return applyMove(board, fromRow, fromCol, toRow, toCol);
+}
+
 // Minimax with alpha-beta pruning
 function minimax(
   board: Board,
@@ -128,14 +136,15 @@ function minimax(
   beta: number,
   isMaximizing: boolean,
   player: Player,
-  opponent: Player
+  opponent: Player,
+  castlingRights: CastlingRights
 ): number {
   if (depth === 0) {
     return evaluateBoard(board, player);
   }
 
   const currentMover: Player = isMaximizing ? player : opponent;
-  const allMoves = getAllValidMovesForPlayer(board, currentMover);
+  const allMoves = getAllValidMovesForPlayer(board, currentMover, castlingRights);
 
   if (allMoves.size === 0) {
     if (isKingInCheck(board, currentMover)) {
@@ -150,12 +159,17 @@ function minimax(
       const [rowStr, colStr] = posKey.split(',');
       const fromRow = parseInt(rowStr);
       const fromCol = parseInt(colStr);
+      const movingPiece = board[fromRow][fromCol];
       for (const to of destinations) {
-        const newBoard = applyMove(board, fromRow, fromCol, to.row, to.col);
+        const newBoard = applyAIMove(board, fromRow, fromCol, to.row, to.col);
         if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
         if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
 
-        const evalScore = minimax(newBoard, depth - 1, alpha, beta, false, player, opponent);
+        const newRights = movingPiece
+          ? updateCastlingRights(castlingRights, movingPiece, fromRow, fromCol)
+          : castlingRights;
+
+        const evalScore = minimax(newBoard, depth - 1, alpha, beta, false, player, opponent, newRights);
         if (evalScore > maxEval) maxEval = evalScore;
         if (evalScore > alpha) alpha = evalScore;
         if (beta <= alpha) break outer;
@@ -168,12 +182,17 @@ function minimax(
       const [rowStr, colStr] = posKey.split(',');
       const fromRow = parseInt(rowStr);
       const fromCol = parseInt(colStr);
+      const movingPiece = board[fromRow][fromCol];
       for (const to of destinations) {
-        const newBoard = applyMove(board, fromRow, fromCol, to.row, to.col);
+        const newBoard = applyAIMove(board, fromRow, fromCol, to.row, to.col);
         if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
         if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
 
-        const evalScore = minimax(newBoard, depth - 1, alpha, beta, true, player, opponent);
+        const newRights = movingPiece
+          ? updateCastlingRights(castlingRights, movingPiece, fromRow, fromCol)
+          : castlingRights;
+
+        const evalScore = minimax(newBoard, depth - 1, alpha, beta, true, player, opponent, newRights);
         if (evalScore < minEval) minEval = evalScore;
         if (evalScore < beta) beta = evalScore;
         if (beta <= alpha) break outer;
@@ -183,8 +202,19 @@ function minimax(
   }
 }
 
-export function selectAIMove(board: Board, player: Player): AIMove | null {
-  const allMoves = getAllValidMovesForPlayer(board, player);
+export function selectAIMove(
+  board: Board,
+  player: Player,
+  castlingRights?: CastlingRights
+): AIMove | null {
+  const rights: CastlingRights = castlingRights ?? {
+    whiteKingside: false,
+    whiteQueenside: false,
+    blackKingside: false,
+    blackQueenside: false,
+  };
+
+  const allMoves = getAllValidMovesForPlayer(board, player, rights);
   if (allMoves.size === 0) return null;
 
   const opponent: Player = player === 'white' ? 'black' : 'white';
@@ -196,13 +226,18 @@ export function selectAIMove(board: Board, player: Player): AIMove | null {
   for (const [posKey, destinations] of allMoves) {
     const [rowStr, colStr] = posKey.split(',');
     const from: Position = { row: parseInt(rowStr), col: parseInt(colStr) };
+    const movingPiece = board[from.row][from.col];
 
     for (const to of destinations) {
-      const newBoard = applyMove(board, from.row, from.col, to.row, to.col);
+      const newBoard = applyAIMove(board, from.row, from.col, to.row, to.col);
       if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
       if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
 
-      const score = minimax(newBoard, DEPTH - 1, -Infinity, Infinity, false, player, opponent);
+      const newRights = movingPiece
+        ? updateCastlingRights(rights, movingPiece, from.row, from.col)
+        : rights;
+
+      const score = minimax(newBoard, DEPTH - 1, -Infinity, Infinity, false, player, opponent, newRights);
       const noisyScore = score + Math.random() * 0.5;
 
       if (noisyScore > bestScore) {
@@ -218,6 +253,10 @@ export function selectAIMove(board: Board, player: Player): AIMove | null {
 /**
  * Alias for selectAIMove — used by ChessGame.tsx.
  */
-export function getBestMove(board: Board, player: Player): AIMove | null {
-  return selectAIMove(board, player);
+export function getBestMove(
+  board: Board,
+  player: Player,
+  castlingRights?: CastlingRights
+): AIMove | null {
+  return selectAIMove(board, player, castlingRights);
 }

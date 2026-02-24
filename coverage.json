@@ -1,46 +1,26 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T12:39:38.837Z",
+  "generatedAt": "2026-02-24T14:25:50.061Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-24",
-        "summary": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not play its move after the human makes a move in '1 Player' mode. Ensure that after White (human) commits a move, the AI turn is triggered, `getBestMove` (or equivalent) from `frontend/src/utils/ai-player.ts` is called with the updated board and the Black player, and the resulting move is applied to the board state. The AI thinking delay and indicator must still fire before the move is committed.",
+        "id": "REQ-1",
+        "summary": "Fix the application logo so that it updates and displays correctly — ensure the logo asset reference in the HTML entry point and any React components that render the logo reflect the current/correct logo file and do not serve a stale or missing image.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
+          "frontend/index.html",
+          "frontend/src/App.tsx",
+          "frontend/src/components/PlayerIdentity.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
-        ]
-      },
-      {
-        "id": "REQ-25",
-        "summary": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not alternate moves in 'Auto Play' mode. Ensure that after each move (White or Black), the next AI move is scheduled with the configured delay (600–900ms thinking time), `getBestMove` is called for the correct current player, and moves continue alternating until checkmate, stalemate, threefold repetition, or the user stops the game.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
-        ]
-      },
-      {
-        "id": "REQ-26",
-        "summary": "Audit the `useEffect` hooks and state update flow in `frontend/src/pages/ChessGame.tsx` to ensure that AI move triggers are not dropped due to stale closures, missing dependencies in dependency arrays, or race conditions caused by asynchronous state updates. Fix any stale closure issues by using `useRef` for mutable values (e.g., current board, current player) that are read inside `setTimeout` or async callbacks that drive the AI move loop.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ChessGame.tsx"
+          "frontend/index.html"
         ]
       }
     ]
@@ -50,7 +30,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/ChessGame.tsx",
+    "frontend/index.html",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

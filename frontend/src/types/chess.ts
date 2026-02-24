@@ -18,6 +18,13 @@ export interface LastMove {
   to: Position;
 }
 
+export interface CastlingRights {
+  whiteKingside: boolean;
+  whiteQueenside: boolean;
+  blackKingside: boolean;
+  blackQueenside: boolean;
+}
+
 export interface GameState {
   board: Board;
   currentPlayer: Player;
@@ -26,6 +33,7 @@ export interface GameState {
   drawReason?: DrawReason;
   isCheck: boolean;
   lastMove: LastMove | null;
+  castlingRights: CastlingRights;
   // Online game fields
   gameId?: string;
   whitePlayer?: string;

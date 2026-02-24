@@ -13,6 +13,7 @@ interface GameStatusProps {
   blackTime?: number;
   toggleMute?: () => void;
   isMuted?: boolean;
+  gameStarted?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -32,6 +33,7 @@ export default function GameStatus({
   blackTime,
   toggleMute,
   isMuted,
+  gameStarted = false,
 }: GameStatusProps) {
   const showClocks = whiteTime !== undefined && blackTime !== undefined;
 
@@ -57,8 +59,8 @@ export default function GameStatus({
 
   if (showClocks) {
     return (
-      <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30">
-        <div className={`clock ${currentPlayer === 'white' ? 'clock-active' : ''}`}>
+      <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30 w-full max-w-[560px]">
+        <div className={`clock ${gameStarted && currentPlayer === 'white' ? 'clock-active' : ''} ${!gameStarted ? 'opacity-50' : ''}`}>
           ♔ {formatTime(whiteTime!)}
         </div>
         {toggleMute && (
@@ -70,7 +72,7 @@ export default function GameStatus({
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
         )}
-        <div className={`clock ${currentPlayer === 'black' ? 'clock-active' : ''}`}>
+        <div className={`clock ${gameStarted && currentPlayer === 'black' ? 'clock-active' : ''} ${!gameStarted ? 'opacity-50' : ''}`}>
           ♚ {formatTime(blackTime!)}
         </div>
       </div>
@@ -78,9 +80,11 @@ export default function GameStatus({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30">
+    <div className="flex items-center justify-between px-4 py-2 bg-chess-dark/80 rounded-lg border border-chess-gold/30 w-full max-w-[560px]">
       <div className="status-text">
-        {isAIThinking ? (
+        {!gameStarted ? (
+          <span className="opacity-60">Press Start Game to begin</span>
+        ) : isAIThinking ? (
           <span className="flex items-center gap-2">
             AI thinking
             <span className="thinking-dot" style={{ animationDelay: '0ms' }}>•</span>

@@ -1,32 +1,62 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ChessBoard from '../components/ChessBoard';
 import GameStatus from '../components/GameStatus';
 import GameModeSelector from '../components/GameModeSelector';
+import GameResultsPanel from '../components/GameResultsPanel';
+import OnlineGameSetup from '../components/OnlineGameSetup';
+import OnlineChessGame from './OnlineChessGame';
 import LoginButton from '../components/LoginButton';
 import PlayerIdentity from '../components/PlayerIdentity';
 import PlayerStats from '../components/PlayerStats';
-import ProfileSetupModal from '../components/ProfileSetupModal';
-import GameResultsPanel from '../components/GameResultsPanel';
 import Leaderboard from '../components/Leaderboard';
-import OnlineGameSetup from '../components/OnlineGameSetup';
-import OnlineChessGame from './OnlineChessGame';
+import ProfileSetupModal from '../components/ProfileSetupModal';
+import { Button } from '../components/ui/button';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useGetCallerUserProfile } from '../hooks/useGetCallerUserProfile';
 import { createInitialBoard } from '../utils/chess-setup';
 import { getValidMoves } from '../utils/valid-moves';
 import { getGameStatus } from '../utils/game-status';
 import { getBestMove } from '../utils/ai-player';
-import { useMoveSound } from '../hooks/useMoveSound';
-import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import {
+  isCastlingMove,
+  applyCastlingMove,
+  applyMove,
+  updateCastlingRights,
+  isKingInCheck,
+} from '../utils/move-validation';
 import {
   trackPosition,
   hasThreefoldRepetition,
   clearPositionHistory,
   type PositionHistory,
 } from '../utils/position-tracker';
-import type { GameState, GameMode, Position, DrawReason } from '../types/chess';
-import { Trophy, BarChart2 } from 'lucide-react';
+import { useMoveSound } from '../hooks/useMoveSound';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import type {
+  GameState,
+  GameMode,
+  GameResult,
+  DrawReason,
+  Position,
+  Board,
+  CastlingRights,
+} from '../types/chess';
+import { Play, Trophy } from 'lucide-react';
 
-const INITIAL_TIME = 600; // 10 minutes per player
+const INITIAL_TIME = 10 * 60; // 10 minutes in seconds
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+const initialCastlingRights: CastlingRights = {
+  whiteKingside: true,
+  whiteQueenside: true,
+  blackKingside: true,
+  blackQueenside: true,
+};
 
 function createInitialGameState(): GameState {
   return {
@@ -36,59 +66,63 @@ function createInitialGameState(): GameState {
     gameOver: null,
     isCheck: false,
     lastMove: null,
+    castlingRights: initialCastlingRights,
   };
 }
 
 export default function ChessGame() {
-  const [gameState, setGameState] = useState<GameState>(createInitialGameState());
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity;
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
+
+  const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
+
   const [gameMode, setGameMode] = useState<GameMode>('two-players');
+  const [gameState, setGameState] = useState<GameState>(createInitialGameState());
   const [validMoves, setValidMoves] = useState<Position[]>([]);
-  const [isAIThinking, setIsAIThinking] = useState(false);
   const [whiteTime, setWhiteTime] = useState(INITIAL_TIME);
   const [blackTime, setBlackTime] = useState(INITIAL_TIME);
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [showOnlineSetup, setShowOnlineSetup] = useState(false);
+  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
+  const [onlinePlayerColor, setOnlinePlayerColor] = useState<'white' | 'black'>('white');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
-  const [onlineGameId, setOnlineGameId] = useState<string | null>(null);
-  const [onlinePlayerColor, setOnlinePlayerColor] = useState<'white' | 'black'>('white');
-
-  const positionHistoryRef = useRef<PositionHistory>(clearPositionHistory());
-  const autoPlayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Refs to hold latest state for use inside setTimeout callbacks (avoids stale closures)
-  const gameStateRef = useRef<GameState>(gameState);
-  const gameModeRef = useRef<GameMode>('two-players');
-  const isAIThinkingRef = useRef(false);
-  const isAuthenticatedRef = useRef(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   const { playMoveSound } = useMoveSound();
-  const { toggleMute, isMuted } = useBackgroundMusic();
-  const { identity } = useInternetIdentity();
+  const { startMusic, toggleMute, isMuted, isPlaying } = useBackgroundMusic();
 
-  const isAuthenticated = !!identity;
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const positionHistoryRef = useRef<PositionHistory>(clearPositionHistory());
+  const gameStateRef = useRef<GameState>(gameState);
+  const gameModeRef = useRef<GameMode>(gameMode);
+  const gameStartedRef = useRef(gameStarted);
+  const isAiThinkingRef = useRef(false);
 
-  // Keep refs in sync with state
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+  useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
+  useEffect(() => { gameStartedRef.current = gameStarted; }, [gameStarted]);
+
+  // Timer logic — only runs when gameStarted is true
   useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
-  useEffect(() => {
-    gameModeRef.current = gameMode;
-  }, [gameMode]);
-
-  useEffect(() => {
-    isAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated]);
-
-  // Timer logic
-  useEffect(() => {
-    if (gameState.gameOver || gameMode === 'auto-play' || gameMode === 'online') {
-      if (timerRef.current) clearInterval(timerRef.current);
+    if (!gameStarted || gameState.gameOver || gameMode === 'auto-play' || gameMode === 'online') {
       return;
     }
+
     timerRef.current = setInterval(() => {
-      if (gameStateRef.current.currentPlayer === 'white') {
+      const current = gameStateRef.current;
+      if (current.gameOver || !gameStartedRef.current) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        return;
+      }
+      if (current.currentPlayer === 'white') {
         setWhiteTime(t => {
           if (t <= 1) {
             setGameState(prev => ({ ...prev, gameOver: 'black' }));
@@ -110,143 +144,219 @@ export default function ChessGame() {
         });
       }
     }, 1000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [gameState.currentPlayer, gameState.gameOver, gameMode]);
+  }, [gameStarted, gameState.gameOver, gameState.currentPlayer, gameMode]);
 
-  const applyMoveAndCheck = useCallback(
-    (prevState: GameState, from: Position, to: Position): GameState => {
-      const newBoard = prevState.board.map(r => [...r]);
-      newBoard[to.row][to.col] = newBoard[from.row][from.col];
-      newBoard[from.row][from.col] = null;
+  // AI move for one-player mode
+  useEffect(() => {
+    if (!gameStarted) return;
+    if (gameMode !== 'one-player') return;
+    if (gameState.currentPlayer !== 'black') return;
+    if (gameState.gameOver) return;
+    if (isAiThinkingRef.current) return;
 
-      // Pawn promotion
-      if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
-      if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
+    isAiThinkingRef.current = true;
+    setIsAiThinking(true);
 
-      const nextPlayer: 'white' | 'black' = prevState.currentPlayer === 'white' ? 'black' : 'white';
-
-      // Track position for threefold repetition
-      trackPosition(positionHistoryRef.current, newBoard, nextPlayer);
-
-      if (hasThreefoldRepetition(positionHistoryRef.current)) {
-        return {
-          ...prevState,
-          board: newBoard,
-          currentPlayer: nextPlayer,
-          selectedPiece: null,
-          gameOver: 'draw',
-          drawReason: 'threefold' as DrawReason,
-          isCheck: false,
-          lastMove: { from, to },
-        };
+    const delay = 800 + Math.random() * 1200;
+    const timer = setTimeout(() => {
+      const current = gameStateRef.current;
+      if (current.gameOver || gameModeRef.current !== 'one-player' || !gameStartedRef.current) {
+        isAiThinkingRef.current = false;
+        setIsAiThinking(false);
+        return;
       }
 
-      const status = getGameStatus(newBoard, nextPlayer);
+      const aiMove = getBestMove(current.board, 'black', current.castlingRights);
+      if (aiMove) {
+        playMoveSound();
+        setGameState(prev => {
+          const { from, to } = aiMove;
+          let newBoard: Board;
+          if (isCastlingMove(prev.board, from.row, from.col, to.row, to.col)) {
+            newBoard = applyCastlingMove(prev.board, from.row, from.col, to.row, to.col);
+          } else {
+            newBoard = applyMove(prev.board, from.row, from.col, to.row, to.col);
+            // Pawn promotion
+            if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
+          }
+          const movingPiece = prev.board[from.row][from.col];
+          const newCastlingRights = movingPiece
+            ? updateCastlingRights(prev.castlingRights, movingPiece, from.row, from.col)
+            : prev.castlingRights;
 
-      let gameOver: GameState['gameOver'] = null;
-      let drawReason: DrawReason | undefined = undefined;
-      let isCheck = false;
+          trackPosition(positionHistoryRef.current, newBoard, 'white');
+          if (hasThreefoldRepetition(positionHistoryRef.current)) {
+            setTimeout(() => { setShowResults(true); setPointsEarned(isAuthenticated ? 3 : 0); }, 100);
+            return { ...prev, board: newBoard, currentPlayer: 'white', selectedPiece: null, gameOver: 'draw', drawReason: 'threefold' as DrawReason, isCheck: false, lastMove: { from, to }, castlingRights: newCastlingRights };
+          }
 
-      if (status.status === 'checkmate') {
-        gameOver = status.winner!;
-      } else if (status.status === 'stalemate') {
-        gameOver = 'draw';
-        drawReason = 'stalemate';
-      } else if (status.status === 'check') {
-        isCheck = true;
+          const status = getGameStatus(newBoard, 'white');
+          let gameOver: GameResult = null;
+          let drawReason: DrawReason | undefined;
+          let isCheck = false;
+          if (status.status === 'checkmate') { gameOver = status.winner!; }
+          else if (status.status === 'stalemate') { gameOver = 'draw'; drawReason = 'stalemate'; }
+          else if (status.status === 'check') { isCheck = true; }
+
+          if (gameOver) {
+            const pts = gameOver === 'draw' ? (isAuthenticated ? 3 : 0) : (isAuthenticated ? 10 : 0);
+            setTimeout(() => { setShowResults(true); setPointsEarned(pts); }, 100);
+          }
+          return { ...prev, board: newBoard, currentPlayer: 'white', selectedPiece: null, gameOver, drawReason, isCheck, lastMove: { from, to }, castlingRights: newCastlingRights };
+        });
+      }
+      isAiThinkingRef.current = false;
+      setIsAiThinking(false);
+    }, delay);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted, gameMode, gameState.currentPlayer, gameState.gameOver]);
+
+  // Auto-play mode
+  useEffect(() => {
+    if (!gameStarted) return;
+    if (gameMode !== 'auto-play') return;
+    if (gameState.gameOver) return;
+    if (isAiThinkingRef.current) return;
+
+    isAiThinkingRef.current = true;
+    setIsAiThinking(true);
+
+    const delay = 600 + Math.random() * 900;
+    const timer = setTimeout(() => {
+      const current = gameStateRef.current;
+      if (current.gameOver || gameModeRef.current !== 'auto-play' || !gameStartedRef.current) {
+        isAiThinkingRef.current = false;
+        setIsAiThinking(false);
+        return;
       }
 
-      return {
-        ...prevState,
-        board: newBoard,
-        currentPlayer: nextPlayer,
-        selectedPiece: null,
-        gameOver,
-        drawReason,
-        isCheck,
-        lastMove: { from, to },
-      };
-    },
-    []
-  );
+      const aiMove = getBestMove(current.board, current.currentPlayer, current.castlingRights);
+      if (aiMove) {
+        playMoveSound();
+        setGameState(prev => {
+          const { from, to } = aiMove;
+          let newBoard: Board;
+          if (isCastlingMove(prev.board, from.row, from.col, to.row, to.col)) {
+            newBoard = applyCastlingMove(prev.board, from.row, from.col, to.row, to.col);
+          } else {
+            newBoard = applyMove(prev.board, from.row, from.col, to.row, to.col);
+            if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
+            if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
+          }
+          const movingPiece = prev.board[from.row][from.col];
+          const newCastlingRights = movingPiece
+            ? updateCastlingRights(prev.castlingRights, movingPiece, from.row, from.col)
+            : prev.castlingRights;
 
-  const handleGameOver = useCallback(
-    (newState: GameState) => {
-      if (!newState.gameOver) return;
-      let pts = 0;
-      if (isAuthenticatedRef.current) {
-        pts = newState.gameOver === 'draw' ? 3 : 10;
+          const nextPlayer: 'white' | 'black' = prev.currentPlayer === 'white' ? 'black' : 'white';
+          trackPosition(positionHistoryRef.current, newBoard, nextPlayer);
+          if (hasThreefoldRepetition(positionHistoryRef.current)) {
+            setTimeout(() => { setShowResults(true); setPointsEarned(0); }, 300);
+            return { ...prev, board: newBoard, currentPlayer: nextPlayer, selectedPiece: null, gameOver: 'draw', drawReason: 'threefold' as DrawReason, isCheck: false, lastMove: { from, to }, castlingRights: newCastlingRights };
+          }
+
+          const status = getGameStatus(newBoard, nextPlayer);
+          let gameOver: GameResult = null;
+          let drawReason: DrawReason | undefined;
+          let isCheck = false;
+          if (status.status === 'checkmate') { gameOver = status.winner!; }
+          else if (status.status === 'stalemate') { gameOver = 'draw'; drawReason = 'stalemate'; }
+          else if (status.status === 'check') { isCheck = true; }
+
+          if (gameOver) {
+            setTimeout(() => { setShowResults(true); setPointsEarned(0); }, 300);
+          }
+          return { ...prev, board: newBoard, currentPlayer: nextPlayer, selectedPiece: null, gameOver, drawReason, isCheck, lastMove: { from, to }, castlingRights: newCastlingRights };
+        });
       }
-      setPointsEarned(pts);
-      setShowResults(true);
-    },
-    []
-  );
+      isAiThinkingRef.current = false;
+      setIsAiThinking(false);
+    }, delay);
 
-  const handleMove = useCallback(
-    (from: Position, to: Position) => {
-      playMoveSound();
-      setGameState(prev => {
-        const newState = applyMoveAndCheck(prev, from, to);
-        if (newState.gameOver) {
-          setTimeout(() => handleGameOver(newState), 100);
-        }
-        return newState;
-      });
-      setValidMoves([]);
-    },
-    [applyMoveAndCheck, handleGameOver, playMoveSound]
-  );
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted, gameMode, gameState.currentPlayer, gameState.gameOver]);
 
-  const handleNewGame = useCallback(() => {
-    // Cancel any pending AI timeouts
-    if (autoPlayRef.current) {
-      clearTimeout(autoPlayRef.current);
-      autoPlayRef.current = null;
-    }
-    isAIThinkingRef.current = false;
-    positionHistoryRef.current = clearPositionHistory();
-    const newState = createInitialGameState();
-    setGameState(newState);
-    setValidMoves([]);
-    setIsAIThinking(false);
-    setWhiteTime(INITIAL_TIME);
-    setBlackTime(INITIAL_TIME);
-    setShowResults(false);
-    setPointsEarned(0);
-    // Track initial position
-    trackPosition(positionHistoryRef.current, newState.board, newState.currentPlayer);
-  }, []);
+  const handleStartGame = useCallback(() => {
+    setGameStarted(true);
+    if (!isPlaying) startMusic();
+  }, [isPlaying, startMusic]);
 
-  const handleModeChange = useCallback((mode: GameMode) => {
-    setGameMode(mode);
-    if (mode !== 'online') {
-      setOnlineGameId(null);
-      handleNewGame();
-    }
-  }, [handleNewGame]);
-
-  // onSquareClick uses (row, col) to match ChessBoard's interface
   const handleSquareClick = useCallback(
     (row: number, col: number) => {
-      const position: Position = { row, col };
+      if (!gameStarted) return;
       if (gameState.gameOver) return;
       if (gameMode === 'auto-play') return;
       if (gameMode === 'one-player' && gameState.currentPlayer === 'black') return;
-      if (isAIThinking) return;
+      if (isAiThinking) return;
 
-      const { board, currentPlayer, selectedPiece } = gameState;
+      const position: Position = { row, col };
+      const { board, currentPlayer, selectedPiece, castlingRights } = gameState;
       const piece = board[row][col];
 
       if (selectedPiece) {
-        const isValidTarget = validMoves.some(
-          m => m.row === row && m.col === col
-        );
+        const isValidTarget = validMoves.some(m => m.row === row && m.col === col);
         if (isValidTarget) {
-          handleMove(selectedPiece, position);
+          playMoveSound();
+          setGameState(prev => {
+            const from = selectedPiece;
+            const to = position;
+            let newBoard: Board;
+            if (isCastlingMove(prev.board, from.row, from.col, to.row, to.col)) {
+              newBoard = applyCastlingMove(prev.board, from.row, from.col, to.row, to.col);
+            } else {
+              newBoard = applyMove(prev.board, from.row, from.col, to.row, to.col);
+              // Pawn promotion
+              if (newBoard[to.row][to.col] === '♙' && to.row === 7) newBoard[to.row][to.col] = '♕';
+              if (newBoard[to.row][to.col] === '♟' && to.row === 0) newBoard[to.row][to.col] = '♛';
+            }
+
+            const movingPiece = prev.board[from.row][from.col];
+            const newCastlingRights = movingPiece
+              ? updateCastlingRights(prev.castlingRights, movingPiece, from.row, from.col)
+              : prev.castlingRights;
+
+            const nextPlayer: 'white' | 'black' = prev.currentPlayer === 'white' ? 'black' : 'white';
+
+            trackPosition(positionHistoryRef.current, newBoard, nextPlayer);
+            if (hasThreefoldRepetition(positionHistoryRef.current)) {
+              const pts = isAuthenticated ? 3 : 0;
+              setTimeout(() => { setShowResults(true); setPointsEarned(pts); }, 100);
+              return { ...prev, board: newBoard, currentPlayer: nextPlayer, selectedPiece: null, gameOver: 'draw', drawReason: 'threefold' as DrawReason, isCheck: false, lastMove: { from, to }, castlingRights: newCastlingRights };
+            }
+
+            const status = getGameStatus(newBoard, nextPlayer);
+            let gameOver: GameResult = null;
+            let drawReason: DrawReason | undefined;
+            let isCheck = false;
+            if (status.status === 'checkmate') { gameOver = status.winner!; }
+            else if (status.status === 'stalemate') { gameOver = 'draw'; drawReason = 'stalemate'; }
+            else if (status.status === 'check') { isCheck = true; }
+
+            if (gameOver) {
+              const pts = gameOver === 'draw' ? (isAuthenticated ? 3 : 0) : (isAuthenticated ? 10 : 0);
+              setTimeout(() => { setShowResults(true); setPointsEarned(pts); }, 100);
+            }
+            return { ...prev, board: newBoard, currentPlayer: nextPlayer, selectedPiece: null, gameOver, drawReason, isCheck, lastMove: { from, to }, castlingRights: newCastlingRights };
+          });
+          setValidMoves([]);
           return;
+        }
+        // Clicked on own piece — reselect
+        if (piece) {
+          const isWhitePiece = '♔♕♖♗♘♙'.includes(piece);
+          const pieceColor = isWhitePiece ? 'white' : 'black';
+          if (pieceColor === currentPlayer) {
+            setGameState(prev => ({ ...prev, selectedPiece: position }));
+            setValidMoves(getValidMoves(board, position, currentPlayer, castlingRights));
+            return;
+          }
         }
         setGameState(prev => ({ ...prev, selectedPiece: null }));
         setValidMoves([]);
@@ -254,148 +364,80 @@ export default function ChessGame() {
       }
 
       if (piece) {
-        const isWhitePiece = ['♔', '♕', '♖', '♗', '♘', '♙'].includes(piece);
+        const isWhitePiece = '♔♕♖♗♘♙'.includes(piece);
         const pieceColor = isWhitePiece ? 'white' : 'black';
         if (pieceColor !== currentPlayer) return;
-
-        const moves = getValidMoves(board, position, currentPlayer);
         setGameState(prev => ({ ...prev, selectedPiece: position }));
-        setValidMoves(moves);
+        setValidMoves(getValidMoves(board, position, currentPlayer, castlingRights));
       }
     },
-    [gameState, gameMode, isAIThinking, validMoves, handleMove]
+    [gameStarted, gameState, gameMode, isAiThinking, validMoves, playMoveSound, isAuthenticated]
   );
 
-  // ─── AI move for one-player mode ───────────────────────────────────────────
-  // Triggered only when currentPlayer flips to 'black' in one-player mode.
-  // Uses refs inside the setTimeout to read the latest state and avoid stale closures.
-  // isAIThinking is intentionally NOT in the dependency array to prevent the
-  // cleanup from cancelling the pending timer when isAIThinking state changes.
-  useEffect(() => {
-    if (
-      gameMode !== 'one-player' ||
-      gameState.currentPlayer !== 'black' ||
-      gameState.gameOver
-    ) return;
-
-    // Guard against double-scheduling using a ref
-    if (isAIThinkingRef.current) return;
-    isAIThinkingRef.current = true;
-    setIsAIThinking(true);
-
-    const delay = 1500 + Math.random() * 1500;
-    const timer = setTimeout(() => {
-      // Read latest state from ref to avoid stale closure
-      const currentState = gameStateRef.current;
-
-      // Abort if game ended or mode changed while we were waiting
-      if (currentState.gameOver || gameModeRef.current !== 'one-player') {
-        isAIThinkingRef.current = false;
-        setIsAIThinking(false);
-        return;
-      }
-
-      const aiMove = getBestMove(currentState.board, 'black');
-      if (aiMove) {
-        playMoveSound();
-        setGameState(prev => {
-          const newState = applyMoveAndCheck(prev, aiMove.from, aiMove.to);
-          if (newState.gameOver) {
-            setTimeout(() => handleGameOver(newState), 100);
-          }
-          return newState;
-        });
-      }
-      isAIThinkingRef.current = false;
-      setIsAIThinking(false);
-    }, delay);
-
-    // Only clean up if the component unmounts or mode/gameOver changes,
-    // NOT when isAIThinking changes (that would cancel the pending move).
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameMode, gameState.currentPlayer, gameState.gameOver]);
-
-  // ─── Auto-play mode ────────────────────────────────────────────────────────
-  // Uses a self-scheduling pattern with refs to avoid stale closures.
-  // The effect only starts/stops the loop; the loop itself reads from refs.
-  useEffect(() => {
-    if (gameMode !== 'auto-play') return;
-
-    let cancelled = false;
-
-    const scheduleNextMove = () => {
-      if (cancelled) return;
-
-      const delay = 600 + Math.random() * 300;
-      autoPlayRef.current = setTimeout(() => {
-        if (cancelled) return;
-
-        // Read latest state from refs
-        const currentState = gameStateRef.current;
-
-        if (currentState.gameOver || gameModeRef.current !== 'auto-play') {
-          return;
-        }
-
-        setIsAIThinking(true);
-
-        // Small additional thinking delay for visual feedback
-        const thinkDelay = 400 + Math.random() * 400;
-        autoPlayRef.current = setTimeout(() => {
-          if (cancelled) return;
-
-          const latestState = gameStateRef.current;
-          if (latestState.gameOver || gameModeRef.current !== 'auto-play') {
-            setIsAIThinking(false);
-            return;
-          }
-
-          const aiMove = getBestMove(latestState.board, latestState.currentPlayer);
-          if (aiMove) {
-            playMoveSound();
-            setGameState(prev => {
-              const newState = applyMoveAndCheck(prev, aiMove.from, aiMove.to);
-              if (newState.gameOver) {
-                setTimeout(() => handleGameOver(newState), 100);
-              }
-              return newState;
-            });
-          }
-
-          setIsAIThinking(false);
-
-          // Schedule the next move after state has been committed
-          // Use a short delay to let React process the state update
-          if (!cancelled) {
-            scheduleNextMove();
-          }
-        }, thinkDelay);
-      }, delay);
-    };
-
-    scheduleNextMove();
-
-    return () => {
-      cancelled = true;
-      if (autoPlayRef.current) {
-        clearTimeout(autoPlayRef.current);
-        autoPlayRef.current = null;
-      }
-      setIsAIThinking(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameMode, gameState.gameOver]);
-
-  // Track initial position on mount
-  useEffect(() => {
-    trackPosition(positionHistoryRef.current, gameState.board, gameState.currentPlayer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleNewGame = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    isAiThinkingRef.current = false;
+    setIsAiThinking(false);
+    positionHistoryRef.current = clearPositionHistory();
+    const newState = createInitialGameState();
+    setGameState(newState);
+    setValidMoves([]);
+    setWhiteTime(INITIAL_TIME);
+    setBlackTime(INITIAL_TIME);
+    setShowResults(false);
+    setPointsEarned(0);
+    setGameStarted(false);
   }, []);
 
-  const showClocks = gameMode !== 'auto-play' && gameMode !== 'online';
+  const handleModeChange = useCallback((mode: GameMode) => {
+    if (mode === 'online') {
+      setGameMode(mode);
+      setShowOnlineSetup(true);
+      setOnlineGameId(null);
+      return;
+    }
+    setGameMode(mode);
+    setShowOnlineSetup(false);
+    setOnlineGameId(null);
+    if (timerRef.current) clearInterval(timerRef.current);
+    isAiThinkingRef.current = false;
+    setIsAiThinking(false);
+    positionHistoryRef.current = clearPositionHistory();
+    const newState = createInitialGameState();
+    setGameState(newState);
+    setValidMoves([]);
+    setWhiteTime(INITIAL_TIME);
+    setBlackTime(INITIAL_TIME);
+    setShowResults(false);
+    setPointsEarned(0);
+    setGameStarted(false);
+  }, []);
 
-  // Build game-over message for board overlay
+  const handleGameReady = useCallback((gameId: string, color: 'white' | 'black') => {
+    setOnlineGameId(gameId);
+    setOnlinePlayerColor(color);
+    setShowOnlineSetup(false);
+  }, []);
+
+  const handleLeaveOnline = useCallback(() => {
+    setGameMode('two-players');
+    setOnlineGameId(null);
+    setShowOnlineSetup(false);
+    handleNewGame();
+  }, [handleNewGame]);
+
+  // Derive check state for board highlight
+  const checkKingPosition: Position | null = (() => {
+    if (!gameState.isCheck || gameState.gameOver) return null;
+    const kingPiece = gameState.currentPlayer === 'white' ? '♔' : '♚';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (gameState.board[r][c] === kingPiece) return { row: r, col: c };
+      }
+    }
+    return null;
+  })();
+
   const getGameOverMessage = (): string => {
     const { gameOver, drawReason } = gameState;
     if (!gameOver) return '';
@@ -406,204 +448,236 @@ export default function ChessGame() {
     return `${gameOver === 'white' ? 'White' : 'Black'} Wins by Checkmate!`;
   };
 
+  const showClocks = gameMode !== 'auto-play' && gameMode !== 'online';
+
+  if (gameMode === 'online' && onlineGameId) {
+    return (
+      <OnlineChessGame
+        gameId={onlineGameId}
+        playerColor={onlinePlayerColor}
+        onLeave={handleLeaveOnline}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--chess-bg)' }}>
       {/* Header */}
       <header
         className="sticky top-0 z-10 border-b"
-        style={{
-          background: 'var(--chess-status-bg)',
-          borderColor: 'var(--chess-border)',
-        }}
+        style={{ background: 'var(--chess-status-bg)', borderColor: 'var(--chess-border)' }}
       >
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">♛</span>
+            <img
+              src="/assets/generated/chess-khelo-online-logo.dim_256x256.png"
+              alt="Chess Khelo Online Logo"
+              className="h-11 w-11 object-contain drop-shadow-md"
+            />
             <h1
               className="font-chess text-xl font-bold tracking-wide hidden sm:block"
               style={{ color: 'var(--chess-gold)' }}
             >
-              Chess Master
+              Chess Khelo Online
             </h1>
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            {isAuthenticated && <PlayerStats />}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowLeaderboard(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+              style={{
+                color: showLeaderboard ? 'var(--chess-gold)' : 'var(--chess-text-muted)',
+                background: showLeaderboard ? 'var(--chess-gold-dim)' : 'transparent',
+              }}
+            >
+              <Trophy size={15} />
+              <span className="hidden sm:inline">Leaderboard</span>
+            </button>
+            <PlayerStats />
             <PlayerIdentity />
             <LoginButton />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 flex flex-col lg:flex-row gap-6">
-        {/* Left panel */}
-        <aside className="lg:w-64 flex flex-col gap-4">
-          <GameModeSelector currentMode={gameMode} onModeChange={handleModeChange} />
+      {/* Main content */}
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+        {showProfileSetup && <ProfileSetupModal />}
 
-          {gameMode !== 'online' && (
-            <button
-              onClick={handleNewGame}
-              className="w-full py-2 rounded-md text-sm font-medium transition-colors"
-              style={{
-                border: '1px solid var(--chess-border)',
-                color: 'var(--chess-gold)',
-                background: 'transparent',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,55,0.08)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              ↺ New Game
-            </button>
-          )}
-
-          <button
-            onClick={() => setShowLeaderboard(v => !v)}
-            className="w-full py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            style={{
-              border: `1px solid ${showLeaderboard ? 'var(--chess-gold)' : 'var(--chess-border)'}`,
-              color: showLeaderboard ? 'var(--chess-gold)' : 'var(--chess-muted)',
-              background: showLeaderboard ? 'rgba(212,175,55,0.08)' : 'transparent',
-            }}
-          >
-            <Trophy size={14} />
-            Leaderboard
-          </button>
-
-          {showLeaderboard && <Leaderboard />}
-
-          {gameMode !== 'online' && (
-            <div
-              className="rounded-xl p-4 text-xs space-y-1"
-              style={{
-                border: '1px solid var(--chess-border)',
-                background: 'var(--chess-status-bg)',
-                color: 'var(--chess-muted)',
-              }}
-            >
-              <p
-                className="font-semibold text-xs uppercase tracking-wide mb-2"
-                style={{ color: 'var(--chess-gold)', opacity: 0.8 }}
+        {showLeaderboard && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-chess text-2xl font-bold" style={{ color: 'var(--chess-gold)' }}>
+                Leaderboard
+              </h2>
+              <button
+                onClick={() => setShowLeaderboard(false)}
+                className="text-sm px-3 py-1 rounded transition-colors"
+                style={{ color: 'var(--chess-text-muted)' }}
               >
-                How to Play
-              </p>
-              <p>• Click a piece to select it</p>
-              <p>• Click a highlighted square to move</p>
-              <p>• Capture the opponent's king to win</p>
-              {gameMode === 'one-player' && <p>• You play as White vs AI</p>}
-              {gameMode === 'auto-play' && <p>• Watch AI vs AI battle</p>}
-              {gameMode === 'two-players' && <p>• Take turns with a friend</p>}
+                ✕ Close
+              </button>
             </div>
-          )}
-        </aside>
+            <Leaderboard />
+          </div>
+        )}
 
-        {/* Main game area */}
-        <section className="flex-1 flex flex-col gap-4 items-center">
-          {gameMode === 'online' ? (
-            onlineGameId ? (
-              <OnlineChessGame
-                gameId={onlineGameId}
-                playerColor={onlinePlayerColor}
-                onLeave={() => setOnlineGameId(null)}
-              />
-            ) : (
-              <OnlineGameSetup
-                onGameReady={(id, color) => {
-                  setOnlineGameId(id);
-                  setOnlinePlayerColor(color);
-                }}
-              />
-            )
-          ) : (
-            <>
+        {gameMode === 'online' && showOnlineSetup ? (
+          <OnlineGameSetup onGameReady={handleGameReady} />
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-6 items-start justify-center">
+            {/* Left panel */}
+            <div className="flex flex-col gap-4 lg:w-56 w-full">
+              <GameModeSelector currentMode={gameMode} onModeChange={handleModeChange} />
+
+              {showClocks && (
+                <div
+                  className="rounded-lg p-4 border"
+                  style={{ background: 'var(--chess-status-bg)', borderColor: 'var(--chess-border)' }}
+                >
+                  <div className="text-xs font-medium mb-2 uppercase tracking-wide" style={{ color: 'var(--chess-text-muted)' }}>
+                    Clocks
+                  </div>
+                  <div className="space-y-2">
+                    <div className={`flex items-center justify-between px-3 py-2 rounded ${gameStarted && gameState.currentPlayer === 'white' && !gameState.gameOver ? 'ring-1 ring-chess-gold' : ''}`}
+                      style={{ background: 'var(--chess-bg)' }}>
+                      <span className="text-sm" style={{ color: 'var(--chess-text)' }}>♔ White</span>
+                      <span className={`font-mono font-bold text-lg ${!gameStarted ? 'opacity-50' : ''}`}
+                        style={{ color: gameStarted && gameState.currentPlayer === 'white' && !gameState.gameOver ? 'var(--chess-gold)' : 'var(--chess-text)' }}>
+                        {formatTime(whiteTime)}
+                      </span>
+                    </div>
+                    <div className={`flex items-center justify-between px-3 py-2 rounded ${gameStarted && gameState.currentPlayer === 'black' && !gameState.gameOver ? 'ring-1 ring-chess-gold' : ''}`}
+                      style={{ background: 'var(--chess-bg)' }}>
+                      <span className="text-sm" style={{ color: 'var(--chess-text)' }}>♚ Black</span>
+                      <span className={`font-mono font-bold text-lg ${!gameStarted ? 'opacity-50' : ''}`}
+                        style={{ color: gameStarted && gameState.currentPlayer === 'black' && !gameState.gameOver ? 'var(--chess-gold)' : 'var(--chess-text)' }}>
+                        {formatTime(blackTime)}
+                      </span>
+                    </div>
+                  </div>
+                  {!gameStarted && (
+                    <p className="text-xs mt-2 text-center" style={{ color: 'var(--chess-text-muted)' }}>
+                      Timers start on game begin
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Board area */}
+            <div className="flex flex-col items-center gap-4 flex-1">
               <GameStatus
                 gameOver={gameState.gameOver}
                 drawReason={gameState.drawReason}
                 isCheck={gameState.isCheck}
                 currentPlayer={gameState.currentPlayer}
                 gameMode={gameMode}
-                isAIThinking={isAIThinking}
+                isAIThinking={isAiThinking}
                 whiteTime={showClocks ? whiteTime : undefined}
                 blackTime={showClocks ? blackTime : undefined}
                 toggleMute={toggleMute}
                 isMuted={isMuted}
+                gameStarted={gameStarted}
               />
-              <ChessBoard
-                board={gameState.board}
-                selectedPiece={gameState.selectedPiece}
-                validMoves={validMoves}
-                isAIThinking={isAIThinking}
-                isAutoPlaying={gameMode === 'auto-play' && !gameState.gameOver}
-                isGameOver={!!gameState.gameOver}
-                gameOverMessage={getGameOverMessage()}
-                onSquareClick={handleSquareClick}
-                lastMove={gameState.lastMove}
-              />
-            </>
-          )}
-        </section>
 
-        {/* Right panel - stats */}
-        {isAuthenticated && (
-          <aside className="lg:w-48 flex flex-col gap-4">
-            <div
-              className="rounded-xl p-4 space-y-3"
-              style={{
-                border: '1px solid var(--chess-border)',
-                background: 'var(--chess-status-bg)',
-              }}
-            >
-              <div
-                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide"
-                style={{ color: 'var(--chess-gold)', opacity: 0.8 }}
-              >
-                <BarChart2 size={13} />
-                Your Stats
+              <div className="relative">
+                <ChessBoard
+                  board={gameState.board}
+                  selectedPiece={gameState.selectedPiece}
+                  validMoves={gameStarted ? validMoves : []}
+                  checkKingPosition={checkKingPosition}
+                  onSquareClick={handleSquareClick}
+                  isAIThinking={isAiThinking}
+                  isAutoPlaying={gameMode === 'auto-play'}
+                  isGameOver={!!gameState.gameOver}
+                  gameOver={gameState.gameOver}
+                  gameOverMessage={getGameOverMessage()}
+                  lastMove={gameState.lastMove}
+                  currentPlayer={gameState.currentPlayer}
+                  gameStarted={gameStarted}
+                />
+
+                {/* Start Game overlay */}
+                {!gameStarted && !gameState.gameOver && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center z-20"
+                    style={{ background: 'rgba(0,0,0,0.45)', borderRadius: '4px' }}
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      <Button
+                        onClick={handleStartGame}
+                        size="lg"
+                        className="font-chess font-bold text-base px-8 py-5 rounded-sm shadow-2xl transition-all duration-150 hover:scale-105 active:scale-95"
+                        style={{
+                          background: 'var(--chess-gold)',
+                          color: 'var(--chess-dark)',
+                          border: '2px solid var(--chess-gold)',
+                        }}
+                      >
+                        <Play className="mr-2 h-5 w-5 fill-current" />
+                        Start Game
+                      </Button>
+                      <p className="text-white/70 text-xs font-medium tracking-wide">
+                        Click to begin the match
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <PlayerStats />
+
+              {/* New Game button */}
+              {(gameState.gameOver || gameStarted) && (
+                <button
+                  onClick={handleNewGame}
+                  className="px-6 py-2 rounded text-sm font-medium transition-colors border"
+                  style={{
+                    borderColor: 'var(--chess-gold)',
+                    color: 'var(--chess-gold)',
+                    background: 'transparent',
+                  }}
+                >
+                  New Game
+                </button>
+              )}
             </div>
-          </aside>
+
+            {/* Right spacer for layout balance */}
+            <div className="lg:w-56 w-full" />
+          </div>
         )}
       </main>
 
+      {/* Game Results Panel */}
+      {showResults && gameState.gameOver && (
+        <GameResultsPanel
+          open={showResults}
+          gameOver={gameState.gameOver}
+          drawReason={gameState.drawReason}
+          pointsEarned={pointsEarned}
+          isAuthenticated={isAuthenticated}
+          onNewGame={() => { handleNewGame(); }}
+          onClose={() => setShowResults(false)}
+        />
+      )}
+
       {/* Footer */}
       <footer
-        className="py-4 text-center text-xs"
-        style={{
-          borderTop: '1px solid var(--chess-border)',
-          background: 'var(--chess-status-bg)',
-          color: 'var(--chess-muted)',
-          opacity: 0.8,
-        }}
+        className="border-t py-3 px-4 text-center text-xs"
+        style={{ borderColor: 'var(--chess-border)', color: 'var(--chess-text-muted)', background: 'var(--chess-status-bg)' }}
       >
-        <p>
-          © {new Date().getFullYear()} Chess Master &nbsp;·&nbsp; Built with{' '}
-          <span style={{ color: 'oklch(0.65 0.22 25)' }}>♥</span> using{' '}
-          <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(
-              typeof window !== 'undefined' ? window.location.hostname : 'chess-master'
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'var(--chess-gold)', opacity: 0.7 }}
-          >
-            caffeine.ai
-          </a>
-        </p>
+        © {new Date().getFullYear()} Chess Khelo Online &nbsp;·&nbsp; Built with{' '}
+        <span style={{ color: '#e05' }}>♥</span> using{' '}
+        <a
+          href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'chess-khelo-online')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--chess-gold)' }}
+          className="hover:underline"
+        >
+          caffeine.ai
+        </a>
       </footer>
-
-      {/* Modals */}
-      <ProfileSetupModal />
-      <GameResultsPanel
-        open={showResults}
-        gameOver={gameState.gameOver}
-        drawReason={gameState.drawReason}
-        pointsEarned={pointsEarned}
-        isAuthenticated={isAuthenticated}
-        onNewGame={() => {
-          setShowResults(false);
-          handleNewGame();
-        }}
-        onClose={() => setShowResults(false)}
-      />
     </div>
   );
 }
