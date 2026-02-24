@@ -1,0 +1,14 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-24T12:39:38.834Z",
+  "summary": "The diff modifies ChessGame.tsx to fix AI move triggers using useRef patterns to avoid stale closures, addresses 1 Player and Auto Play modes, and keeps the AI thinking delay and indicator. The implementation aligns well with all three requirements. Key fixes include gameStateRef, gameModeRef, isAIThinkingRef for stale closure prevention, and a cancelled-flag pattern for the auto-play loop. The diff is truncated so some details of the auto-play loop and exact dependency arrays cannot be fully verified, but the file summary explicitly confirms the fixes.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.8,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/pages/ChessGame.tsx",
+    "project_state.json"
+  ]
+}

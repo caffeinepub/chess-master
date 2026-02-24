@@ -1,0 +1,82 @@
+{
+  "kind": "build_request",
+  "title": "Fix AI not making moves in 1 Player and Auto Play modes",
+  "projectName": "Chess Master",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-24",
+      "text": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not play its move after the human makes a move in '1 Player' mode. Ensure that after White (human) commits a move, the AI turn is triggered, `getBestMove` (or equivalent) from `frontend/src/utils/ai-player.ts` is called with the updated board and the Black player, and the resulting move is applied to the board state. The AI thinking delay and indicator must still fire before the move is committed.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "issue ai not play"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After the human (White) makes any legal move in '1 Player' mode, the AI (Black) automatically computes and plays a legal move.",
+        "The AI thinking indicator is shown for 1.5–3 seconds before the AI move is committed.",
+        "The AI move sound plays when the AI move is committed.",
+        "The last-move highlight updates to reflect the AI's move.",
+        "The AI does not play when it is the human's turn or when the game is over."
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "text": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not alternate moves in 'Auto Play' mode. Ensure that after each move (White or Black), the next AI move is scheduled with the configured delay (600–900ms thinking time), `getBestMove` is called for the correct current player, and moves continue alternating until checkmate, stalemate, threefold repetition, or the user stops the game.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "issue ai not play"
+        ]
+      },
+      "acceptanceCriteria": [
+        "In 'Auto Play' mode, both White and Black AI players make moves automatically and alternately without any manual interaction.",
+        "A visible delay of 600–900ms occurs between moves so the game is watchable.",
+        "The AI thinking indicator appears before each move is committed.",
+        "Auto Play stops immediately when checkmate, stalemate, threefold repetition, or timeout is detected.",
+        "Clicking the stop/new game button halts Auto Play immediately."
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "text": "Audit the `useEffect` hooks and state update flow in `frontend/src/pages/ChessGame.tsx` to ensure that AI move triggers are not dropped due to stale closures, missing dependencies in dependency arrays, or race conditions caused by asynchronous state updates. Fix any stale closure issues by using `useRef` for mutable values (e.g., current board, current player) that are read inside `setTimeout` or async callbacks that drive the AI move loop.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "issue ai not play"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The AI move trigger does not silently fail after any human move in '1 Player' mode.",
+        "The Auto Play loop does not silently stop mid-game due to stale state.",
+        "No console errors related to stale closures or missing React hook dependencies appear during AI or Auto Play gameplay.",
+        "The AI correctly reads the most recent board state when computing its move."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not change the AI algorithm in frontend/src/utils/ai-player.ts — only fix the invocation and scheduling logic in ChessGame.tsx.",
+    "Do not modify files listed in frontend.immutablePaths.",
+    "Preserve existing AI thinking delay (1.5–3 seconds) and animated thinking indicator."
+  ],
+  "nonGoals": [
+    "Changing AI difficulty or minimax depth.",
+    "Modifying backend Motoko code.",
+    "Changing the visual theme or board colors.",
+    "Adding new game modes."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

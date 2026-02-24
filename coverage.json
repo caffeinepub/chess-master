@@ -1,0 +1,59 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-24T12:39:38.837Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 3,
+    "implemented": 3,
+    "items": [
+      {
+        "id": "REQ-24",
+        "summary": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not play its move after the human makes a move in '1 Player' mode. Ensure that after White (human) commits a move, the AI turn is triggered, `getBestMove` (or equivalent) from `frontend/src/utils/ai-player.ts` is called with the updated board and the Black player, and the resulting move is applied to the board state. The AI thinking delay and indicator must still fire before the move is committed.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ]
+      },
+      {
+        "id": "REQ-25",
+        "summary": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not alternate moves in 'Auto Play' mode. Ensure that after each move (White or Black), the next AI move is scheduled with the configured delay (600–900ms thinking time), `getBestMove` is called for the correct current player, and moves continue alternating until checkmate, stalemate, threefold repetition, or the user stops the game.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ]
+      },
+      {
+        "id": "REQ-26",
+        "summary": "Audit the `useEffect` hooks and state update flow in `frontend/src/pages/ChessGame.tsx` to ensure that AI move triggers are not dropped due to stale closures, missing dependencies in dependency arrays, or race conditions caused by asynchronous state updates. Fix any stale closure issues by using `useRef` for mutable values (e.g., current board, current player) that are read inside `setTimeout` or async callbacks that drive the AI move loop.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ChessGame.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/pages/ChessGame.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

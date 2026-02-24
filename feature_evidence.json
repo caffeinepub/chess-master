@@ -1,0 +1,62 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-diagnose-and-fix-the-bug-in-frontend-src-pages-chessgame-tsx-where-the-ai-does-not-play-its-move-after-the-human-makes-a-move-in-1-player-mode-ensure-that-after-white-human-commits-a-move-the-ai-turn-is-triggered-getbestmove-or-equivalent-from-frontend-src-utils-ai-player-ts-is-called-with-the-updated-board-and-the-black-player-and-the-resulting-move-is-applied-to-the-board-state-the-ai-thinking-delay-and-indicator-must-still-fire-before-the-move-is-committed",
+      "featureTitle": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not play its move after the human makes a move in '1 Player' mode. Ensure that after White (human) commits a move, the AI turn is triggered, `getBestMove` (or equivalent) from `frontend/src/utils/ai-player.ts` is called with the updated board and the Black player, and the resulting move is applied to the board state. The AI thinking delay and indicator must still fire before the move is committed.",
+      "files": [
+        "frontend/src/pages/ChessGame.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-24"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-diagnose-and-fix-the-bug-in-frontend-src-pages-chessgame-tsx-where-the-ai-does-not-alternate-moves-in-auto-play-mode-ensure-that-after-each-move-white-or-black-the-next-ai-move-is-scheduled-with-the-configured-delay-600-900ms-thinking-time-getbestmove-is-called-for-the-correct-current-player-and-moves-continue-alternating-until-checkmate-stalemate-threefold-repetition-or-the-user-stops-the-game",
+      "featureTitle": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not alternate moves in 'Auto Play' mode. Ensure that after each move (White or Black), the next AI move is scheduled with the configured delay (600–900ms thinking time), `getBestMove` is called for the correct current player, and moves continue alternating until checkmate, stalemate, threefold repetition, or the user stops the game.",
+      "files": [
+        "frontend/src/pages/ChessGame.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-audit-the-useeffect-hooks-and-state-update-flow-in-frontend-src-pages-chessgame-tsx-to-ensure-that-ai-move-triggers-are-not-dropped-due-to-stale-closures-missing-dependencies-in-dependency-arrays-or-race-conditions-caused-by-asynchronous-state-updates-fix-any-stale-closure-issues-by-using-useref-for-mutable-values-e-g-current-board-current-player-that-are-read-inside-settimeout-or-async-callbacks-that-drive-the-ai-move-loop",
+      "featureTitle": "Audit the `useEffect` hooks and state update flow in `frontend/src/pages/ChessGame.tsx` to ensure that AI move triggers are not dropped due to stale closures, missing dependencies in dependency arrays, or race conditions caused by asynchronous state updates. Fix any stale closure issues by using `useRef` for mutable values (e.g., current board, current player) that are read inside `setTimeout` or async callbacks that drive the AI move loop.",
+      "files": [
+        "frontend/src/pages/ChessGame.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-26"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

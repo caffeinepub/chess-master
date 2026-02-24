@@ -1,0 +1,307 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 19,
+  "summary": "Chess game with knight move validation, classic green/ivory board theme, single-player vs AI and auto-play modes, with AI difficulty/IQ increase, 10-minute game timing, move sounds, background melody music, last-move highlighting, slower/softer AI play speed, time-taking animation, threefold repetition draw rule, player login, online multiplayer, and player win report/point system",
+  "architectural_notes": [
+    "Knight move validation uses L-shape logic: (rowDiff=2 && colDiff=1) || (rowDiff=1 && colDiff=2); supports both ♘ and ♞ pieces"
+  ],
+  "known_issues": [
+    "Checkmate detection and game-over message not displaying correctly",
+    "AI does not play its move (AI not making moves in 1 Player / Auto Play mode)"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-implement-a-fully-playable-chess-game-with-an-8x8-board-rendered-in-the-frontend-supporting-all-standard-piece-types-king-queen-rook-bishop-knight-pawn-for-both-white-and-black-players",
+      "title": "Implement a fully playable chess game with an 8x8 board rendered in the frontend, supporting all standard piece types (King, Queen, Rook, Bishop, Knight, Pawn) for both White and Black players.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-move-validation-for-all-chess-pieces-knight-move-validation-must-use-the-provided-l-shape-logic-valid-if-rowdiff-2-coldiff-1-rowdiff-1-coldiff-2-and-only-applies-to-pieces-white-knight-and-black-knight",
+      "title": "Implement move validation for all chess pieces. Knight move validation must use the provided L-shape logic: valid if (rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2), and only applies to pieces '♘' (white knight) and '♞' (black knight).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-click-based-piece-selection-and-movement-clicking-a-piece-highlights-it-and-shows-valid-destination-squares-clicking-a-valid-destination-moves-the-piece-there",
+      "title": "Implement click-based piece selection and movement: clicking a piece highlights it and shows valid destination squares; clicking a valid destination moves the piece there.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-detect-and-display-check-checkmate-and-stalemate-conditions-show-a-game-over-message-when-checkmate-or-stalemate-is-reached-with-an-option-to-restart-the-game",
+      "title": "Detect and display check, checkmate, and stalemate conditions. Show a game-over message when checkmate or stalemate is reached, with an option to restart the game.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-sophisticated-classic-chess-aesthetic-a-dark-wood-grain-inspired-board-with-cream-and-walnut-square-colors-elegant-serif-typography-for-any-ui-labels-and-a-rich-dark-background-use-gold-accent-colors-for-highlights-and-selected-piece-indicators-enforce-this-visual-theme-consistently-across-the-entire-ui",
+      "title": "Apply a sophisticated, classic chess aesthetic: a dark wood-grain inspired board with cream and walnut square colors, elegant serif typography for any UI labels, and a rich dark background. Use gold accent colors for highlights and selected piece indicators. Enforce this visual theme consistently across the entire UI.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-dark-wood-grain-inspired-board-colors-cream-and-walnut-squares-with-a-new-board-color-scheme-use-a-classic-green-and-ivory-cream-color-palette-similar-to-traditional-tournament-chess-boards-for-the-light-and-dark-squares-update-the-relevant-css-custom-properties-in-frontend-src-index-css-and-any-tailwind-config-values-in-frontend-tailwind-config-js-so-the-new-board-square-colors-are-applied-consistently-ensure-the-gold-highlight-selection-accent-colors-remain-visible-and-harmonious-against-the-new-board-colors",
+      "title": "Replace the current dark wood-grain inspired board colors (cream and walnut squares) with a new board color scheme. Use a classic green and ivory/cream color palette (similar to traditional tournament chess boards) for the light and dark squares. Update the relevant CSS custom properties in `frontend/src/index.css` and any Tailwind config values in `frontend/tailwind.config.js` so the new board square colors are applied consistently. Ensure the gold highlight/selection accent colors remain visible and harmonious against the new board colors.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-game-mode-selector-to-the-chess-ui-with-three-options-two-players-existing-human-vs-human-1-player-human-plays-white-against-an-ai-opponent-and-auto-play-both-sides-played-automatically-by-the-computer-display-the-selector-before-the-game-starts-and-allow-switching-modes-via-a-new-game-restart-persist-the-selected-mode-in-component-state",
+      "title": "Add a game mode selector to the chess UI with three options: 'Two Players' (existing human vs human), '1 Player' (human plays White against an AI opponent), and 'Auto Play' (both sides played automatically by the computer). Display the selector before the game starts and allow switching modes via a New Game restart. Persist the selected mode in component state.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-computer-ai-opponent-for-1-player-mode-the-human-player-controls-white-and-moves-first-after-each-white-move-the-ai-automatically-computes-and-plays-a-move-for-black-the-ai-must-select-only-legal-moves-using-existing-move-validation-logic-from-move-validation-ts-and-valid-moves-ts-the-ai-should-use-at-minimum-a-random-legal-move-strategy-preferring-captures-or-checks-over-random-moves-is-desirable-but-not-required",
+      "title": "Implement a computer AI opponent for '1 Player' mode. The human player controls White and moves first. After each White move, the AI automatically computes and plays a move for Black. The AI must select only legal moves (using existing move validation logic from move-validation.ts and valid-moves.ts). The AI should use at minimum a random-legal-move strategy; preferring captures or checks over random moves is desirable but not required.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-auto-play-mode-where-the-computer-plays-both-white-and-black-automatically-after-the-game-mode-is-set-to-auto-play-and-a-new-game-starts-moves-alternate-between-white-and-black-ai-players-continuously-until-checkmate-stalemate-or-the-user-clicks-a-stop-new-game-button-apply-a-visible-delay-between-each-move-e-g-600-900ms-so-the-game-is-watchable",
+      "title": "Implement 'Auto Play' mode where the computer plays both White and Black automatically. After the game mode is set to Auto Play and a new game starts, moves alternate between White and Black AI players continuously until checkmate, stalemate, or the user clicks a stop/new game button. Apply a visible delay between each move (e.g., 600–900ms) so the game is watchable.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-change-the-colors-of-the-chess-pieces-both-white-and-black-to-a-new-visually-distinct-color-scheme-update-the-css-custom-properties-in-frontend-src-index-css-and-any-relevant-tailwind-config-values-in-frontend-tailwind-config-js-so-that-white-pieces-and-black-pieces-are-clearly-distinguishable-from-each-other-and-from-the-classic-green-ivory-board-squares-ensure-the-new-piece-colors-remain-harmonious-with-the-existing-gold-highlight-selection-accent-colors-and-the-green-and-ivory-board-theme",
+      "title": "Change the colors of the chess pieces (both White and Black) to a new, visually distinct color scheme. Update the CSS custom properties in `frontend/src/index.css` and any relevant Tailwind config values in `frontend/tailwind.config.js` so that White pieces and Black pieces are clearly distinguishable from each other and from the classic green/ivory board squares. Ensure the new piece colors remain harmonious with the existing gold highlight/selection accent colors and the green-and-ivory board theme.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-ai-move-selection-in-frontend-src-utils-ai-player-ts-to-use-a-stronger-heuristic-strategy-the-ai-should-evaluate-moves-using-a-minimax-algorithm-depth-2-3-with-alpha-beta-pruning-incorporating-material-value-scoring-pawn-1-knight-bishop-3-rook-5-queen-9-positional-bonuses-for-center-control-piece-mobility-and-king-safety-this-replaces-the-current-shallow-capture-check-center-scoring-so-the-ai-plays-noticeably-smarter-moves-in-both-1-player-and-auto-play-modes",
+      "title": "Improve the AI move selection in `frontend/src/utils/ai-player.ts` to use a stronger heuristic strategy. The AI should evaluate moves using a minimax algorithm (depth 2–3) with alpha-beta pruning, incorporating material value scoring (Pawn=1, Knight/Bishop=3, Rook=5, Queen=9), positional bonuses for center control, piece mobility, and king safety. This replaces the current shallow capture/check/center scoring so the AI plays noticeably smarter moves in both '1 Player' and 'Auto Play' modes.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-per-player-countdown-clock-to-the-chess-game-each-player-starts-with-10-minutes-600-seconds-the-active-player-s-clock-counts-down-during-their-turn-when-a-player-s-time-runs-out-the-game-ends-immediately-and-a-time-out-opponent-wins-message-is-displayed-the-clocks-must-pause-when-the-game-is-over-or-not-yet-started-display-both-clocks-prominently-in-the-game-ui-styled-consistently-with-the-existing-gold-green-chess-theme-the-timer-applies-to-two-players-and-1-player-modes-in-auto-play-mode-the-timer-is-hidden-or-disabled-provide-a-way-to-reset-the-clocks-when-a-new-game-is-started",
+      "title": "Add a per-player countdown clock to the chess game. Each player starts with 10 minutes (600 seconds). The active player's clock counts down during their turn. When a player's time runs out, the game ends immediately and a 'Time Out – [Opponent] wins!' message is displayed. The clocks must pause when the game is over or not yet started. Display both clocks prominently in the game UI, styled consistently with the existing gold/green chess theme. The timer applies to 'Two Players' and '1 Player' modes; in 'Auto Play' mode the timer is hidden or disabled. Provide a way to reset the clocks when a New Game is started.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-checkmate-detection-logic-in-frontend-src-utils-game-status-ts-so-that-when-a-player-s-king-is-in-check-and-they-have-no-legal-moves-the-game-status-correctly-returns-checkmate-ensure-this-result-is-properly-consumed-in-frontend-src-pages-chessgame-tsx-and-frontend-src-components-gamestatus-tsx-so-that-the-game-ends-immediately-upon-checkmate",
+      "title": "Fix the checkmate detection logic in `frontend/src/utils/game-status.ts` so that when a player's king is in check and they have no legal moves, the game status correctly returns 'checkmate'. Ensure this result is properly consumed in `frontend/src/pages/ChessGame.tsx` and `frontend/src/components/GameStatus.tsx` so that the game ends immediately upon checkmate.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-stalemate-detection-logic-in-frontend-src-utils-game-status-ts-so-that-when-the-active-player-s-king-is-not-in-check-but-they-have-no-legal-moves-the-game-status-correctly-returns-stalemate-ensure-the-stalemate-game-over-message-stalemate-draw-is-displayed-in-frontend-src-components-gamestatus-tsx-and-the-game-ends-immediately",
+      "title": "Fix the stalemate detection logic in `frontend/src/utils/game-status.ts` so that when the active player's king is NOT in check but they have no legal moves, the game status correctly returns 'stalemate'. Ensure the stalemate game-over message ('Stalemate – Draw!') is displayed in `frontend/src/components/GameStatus.tsx` and the game ends immediately.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-game-over-message-rendering-in-frontend-src-components-gamestatus-tsx-and-frontend-src-pages-chessgame-tsx-to-ensure-the-game-over-overlay-or-status-message-is-unconditionally-visible-whenever-the-game-state-is-checkmate-stalemate-or-timeout-verify-the-gamestatus-value-is-being-passed-correctly-as-a-prop-and-that-no-conditional-rendering-path-silently-suppresses-the-message",
+      "title": "Audit and fix the game-over message rendering in `frontend/src/components/GameStatus.tsx` and `frontend/src/pages/ChessGame.tsx` to ensure the game-over overlay or status message is unconditionally visible whenever the game state is 'checkmate', 'stalemate', or 'timeout'. Verify the `gameStatus` value is being passed correctly as a prop and that no conditional rendering path silently suppresses the message.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-play-a-short-audio-sound-effect-each-time-any-chess-piece-is-moved-by-either-the-human-or-the-ai-the-sound-must-play-immediately-when-the-move-is-committed-to-the-board-use-a-synthesized-or-embedded-audio-clip-web-audio-api-or-a-small-base64-encoded-audio-asset-no-external-network-requests-the-sound-should-be-a-soft-distinct-piece-placement-click-tap-tone-consistent-with-the-chess-aesthetic",
+      "title": "Play a short audio sound effect each time any chess piece is moved (by either the human or the AI). The sound must play immediately when the move is committed to the board. Use a synthesized or embedded audio clip (Web Audio API or a small base64-encoded audio asset) — no external network requests. The sound should be a soft, distinct 'piece placement' click/tap tone consistent with the chess aesthetic.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-highlight-the-last-move-made-on-the-board-by-visually-marking-both-the-source-square-origin-and-the-destination-square-of-the-most-recent-move-the-highlight-must-be-distinct-from-the-selection-highlight-and-the-valid-move-indicators-apply-the-highlight-to-moves-made-by-both-the-human-player-and-the-ai-clear-the-last-move-highlight-when-a-new-game-is-started-style-the-last-move-highlight-consistently-with-the-existing-gold-green-chess-theme-e-g-a-subtle-amber-or-light-gold-tint-on-the-two-squares",
+      "title": "Highlight the last move made on the board by visually marking both the source square (origin) and the destination square of the most recent move. The highlight must be distinct from the selection highlight and the valid-move indicators. Apply the highlight to moves made by both the human player and the AI. Clear the last-move highlight when a new game is started. Style the last-move highlight consistently with the existing gold/green chess theme (e.g., a subtle amber or light gold tint on the two squares).",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-play-a-looping-background-melody-music-during-the-chess-game-the-music-should-start-when-a-game-mode-is-selected-and-the-game-begins-and-pause-or-stop-when-the-game-is-over-or-a-new-game-is-reset-use-a-synthesized-ambient-classical-style-melody-generated-via-the-web-audio-api-or-a-small-embedded-audio-asset-no-external-network-requests-include-a-mute-unmute-toggle-button-in-the-game-ui-so-the-user-can-silence-the-background-music-the-music-style-should-complement-the-classic-chess-aesthetic",
+      "title": "Play a looping background melody/music during the chess game. The music should start when a game mode is selected and the game begins, and pause or stop when the game is over or a new game is reset. Use a synthesized ambient/classical-style melody generated via the Web Audio API or a small embedded audio asset — no external network requests. Include a mute/unmute toggle button in the game UI so the user can silence the background music. The music style should complement the classic chess aesthetic.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-computer-ai-appear-to-think-before-playing-its-move-by-introducing-a-visible-graduated-time-taking-delay-instead-of-an-instant-move-the-ai-should-show-a-thinking-indicator-e-g-animated-dots-or-a-pulsing-ai-is-thinking-label-for-1-5-3-seconds-before-committing-the-move-the-exact-delay-should-vary-slightly-per-move-to-feel-natural-rather-than-mechanical-this-applies-to-both-1-player-mode-black-ai-and-auto-play-mode-both-sides-the-existing-ai-is-thinking-overlay-in-chessboard-tsx-should-be-retained-and-enhanced-with-an-animated-indicator",
+      "title": "Make the computer AI appear to 'think' before playing its move by introducing a visible, graduated time-taking delay. Instead of an instant move, the AI should show a thinking indicator (e.g., animated dots or a pulsing 'AI is thinking…' label) for 1.5–3 seconds before committing the move. The exact delay should vary slightly per move to feel natural rather than mechanical. This applies to both '1 Player' mode (Black AI) and 'Auto Play' mode (both sides). The existing 'AI is thinking' overlay in ChessBoard.tsx should be retained and enhanced with an animated indicator.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-threefold-repetition-draw-rule-track-the-full-board-position-including-active-player-after-every-move-if-the-same-position-has-occurred-3-or-more-times-during-the-game-immediately-end-the-game-and-display-a-draw-threefold-repetition-game-over-message-integrate-this-check-into-the-game-loop-in-frontend-src-pages-chessgame-tsx-and-update-frontend-src-utils-game-status-ts-and-frontend-src-components-gamestatus-tsx-to-handle-and-display-the-new-draw-condition-clear-the-position-history-when-a-new-game-is-started",
+      "title": "Implement the threefold repetition draw rule: track the full board position (including active player) after every move. If the same position has occurred 3 or more times during the game, immediately end the game and display a 'Draw – Threefold Repetition!' game-over message. Integrate this check into the game loop in `frontend/src/pages/ChessGame.tsx` and update `frontend/src/utils/game-status.ts` and `frontend/src/components/GameStatus.tsx` to handle and display the new draw condition. Clear the position history when a new game is started.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-player-login-account-system-using-internet-identity-allow-players-to-log-in-with-their-internet-identity-before-or-during-the-game-display-the-logged-in-player-s-principal-or-a-derived-username-in-the-ui-provide-a-login-button-when-not-authenticated-and-a-logout-button-when-authenticated-styled-consistently-with-the-existing-gold-green-chess-theme-store-the-logged-in-identity-in-the-existing-useinternetidentity-hook-already-wired-in-frontend-src-main-tsx-show-the-authenticated-player-s-identifier-prominently-in-the-game-ui-e-g-near-the-clock-status-panel",
+      "title": "Add a player login/account system using Internet Identity. Allow players to log in with their Internet Identity before or during the game. Display the logged-in player's principal or a derived username in the UI. Provide a login button when not authenticated and a logout button when authenticated, styled consistently with the existing gold/green chess theme. Store the logged-in identity in the existing `useInternetIdentity` hook (already wired in `frontend/src/main.tsx`). Show the authenticated player's identifier prominently in the game UI (e.g., near the clock/status panel).",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-online-multiplayer-mode-that-allows-two-authenticated-players-to-play-against-each-other-over-the-internet-add-a-new-game-mode-option-online-to-the-gamemodeselector-component-when-online-mode-is-selected-a-logged-in-player-can-create-a-new-game-room-receiving-a-shareable-game-id-or-join-an-existing-game-room-by-entering-a-game-id-the-backend-motoko-actor-backend-main-mo-must-store-game-rooms-board-state-current-turn-and-player-principals-each-player-sees-the-board-from-their-own-perspective-white-or-black-moves-made-by-one-player-are-persisted-in-the-backend-and-reflected-for-the-other-player-polling-every-1-2-seconds-via-react-query-only-the-player-whose-turn-it-is-can-move-pieces-display-whose-turn-it-is-and-the-opponent-s-identifier-if-a-player-is-not-logged-in-and-tries-to-start-an-online-game-prompt-them-to-log-in-first",
+      "title": "Implement an online multiplayer mode that allows two authenticated players to play against each other over the internet. Add a new game mode option 'Online' to the `GameModeSelector` component. When Online mode is selected, a logged-in player can create a new game room (receiving a shareable game ID) or join an existing game room by entering a game ID. The backend Motoko actor (`backend/main.mo`) must store game rooms, board state, current turn, and player principals. Each player sees the board from their own perspective (White or Black). Moves made by one player are persisted in the backend and reflected for the other player (polling every 1–2 seconds via React Query). Only the player whose turn it is can move pieces. Display whose turn it is and the opponent's identifier. If a player is not logged in and tries to start an Online game, prompt them to log in first.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-player-win-report-and-points-system-in-the-motoko-backend-backend-main-mo-store-a-points-score-record-keyed-by-player-principal-when-an-authenticated-player-wins-a-game-by-checkmate-or-opponent-timeout-award-them-points-e-g-10-points-per-win-and-record-the-win-count-when-a-game-ends-in-a-draw-stalemate-or-threefold-repetition-award-each-player-a-smaller-point-value-e-g-3-points-display-each-logged-in-player-s-current-total-points-and-win-count-in-the-game-ui-near-their-identifier-after-each-game-ends-show-a-results-summary-panel-with-the-outcome-win-draw-loss-and-points-earned-provide-a-leaderboard-or-personal-stats-view-accessible-from-the-main-ui-that-shows-the-top-players-by-points",
+      "title": "Implement a player win report and points system. In the Motoko backend (`backend/main.mo`), store a points/score record keyed by player principal. When an authenticated player wins a game (by checkmate or opponent timeout), award them points (e.g., +10 points per win) and record the win count. When a game ends in a draw (stalemate or threefold repetition), award each player a smaller point value (e.g., +3 points). Display each logged-in player's current total points and win count in the game UI near their identifier. After each game ends, show a results summary panel with the outcome (win/draw/loss) and points earned. Provide a leaderboard or personal stats view accessible from the main UI that shows the top players by points.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-bug-in-frontend-src-pages-chessgame-tsx-where-the-ai-does-not-play-its-move-after-the-human-makes-a-move-in-1-player-mode-ensure-that-after-white-human-commits-a-move-the-ai-turn-is-triggered-getbestmove-or-equivalent-from-frontend-src-utils-ai-player-ts-is-called-with-the-updated-board-and-the-black-player-and-the-resulting-move-is-applied-to-the-board-state-the-ai-thinking-delay-and-indicator-must-still-fire-before-the-move-is-committed",
+      "title": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not play its move after the human makes a move in '1 Player' mode. Ensure that after White (human) commits a move, the AI turn is triggered, `getBestMove` (or equivalent) from `frontend/src/utils/ai-player.ts` is called with the updated board and the Black player, and the resulting move is applied to the board state. The AI thinking delay and indicator must still fire before the move is committed.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-bug-in-frontend-src-pages-chessgame-tsx-where-the-ai-does-not-alternate-moves-in-auto-play-mode-ensure-that-after-each-move-white-or-black-the-next-ai-move-is-scheduled-with-the-configured-delay-600-900ms-thinking-time-getbestmove-is-called-for-the-correct-current-player-and-moves-continue-alternating-until-checkmate-stalemate-threefold-repetition-or-the-user-stops-the-game",
+      "title": "Diagnose and fix the bug in `frontend/src/pages/ChessGame.tsx` where the AI does not alternate moves in 'Auto Play' mode. Ensure that after each move (White or Black), the next AI move is scheduled with the configured delay (600–900ms thinking time), `getBestMove` is called for the correct current player, and moves continue alternating until checkmate, stalemate, threefold repetition, or the user stops the game.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-the-useeffect-hooks-and-state-update-flow-in-frontend-src-pages-chessgame-tsx-to-ensure-that-ai-move-triggers-are-not-dropped-due-to-stale-closures-missing-dependencies-in-dependency-arrays-or-race-conditions-caused-by-asynchronous-state-updates-fix-any-stale-closure-issues-by-using-useref-for-mutable-values-e-g-current-board-current-player-that-are-read-inside-settimeout-or-async-callbacks-that-drive-the-ai-move-loop",
+      "title": "Audit the `useEffect` hooks and state update flow in `frontend/src/pages/ChessGame.tsx` to ensure that AI move triggers are not dropped due to stale closures, missing dependencies in dependency arrays, or race conditions caused by asynchronous state updates. Fix any stale closure issues by using `useRef` for mutable values (e.g., current board, current player) that are read inside `setTimeout` or async callbacks that drive the AI move loop.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-2",
+      "summary": "Single-player mode: 1 human player vs 1 AI/computer opponent",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Auto-play mode: both sides played automatically by the computer",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Change piece (mohre) colors",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Increase AI difficulty/IQ (smarter move selection)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Set game timing to 10 minutes per player",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Play a sound effect when a move is made (move sound)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Highlight/show the last move made on the board",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Play background melody/music during the game",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Make computer AI play more slowly/softly with a visible delay (time-taking effect)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Threefold repetition rule: if the same board position occurs 3 times, the game is declared a draw",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Player login/account system so players can log in with a username/account",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Online multiplayer: allow two players to play against each other over the internet",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Player win report and points system: track wins and award/report points to players",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "2d",
+  "projectName": "Chess Master",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

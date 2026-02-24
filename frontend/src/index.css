@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=EB+Garamond:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Chess-specific design tokens */
+    --chess-bg: oklch(0.14 0.018 45);
+    --chess-light: oklch(0.92 0.02 110);
+    --chess-dark: oklch(0.40 0.09 145);
+    --chess-selected: oklch(0.72 0.14 85);
+    --chess-valid-move: oklch(0.72 0.14 85);
+    --chess-gold: oklch(0.78 0.12 75);
+    --chess-border: oklch(0.30 0.06 145);
+    --chess-status-bg: oklch(0.18 0.02 45);
+    --chess-text: oklch(0.88 0.03 75);
+    --chess-muted: oklch(0.55 0.03 60);
+    --chess-check: oklch(0.55 0.18 25);
+    --chess-check-text: oklch(0.82 0.15 25);
+    /* White pieces: warm luminous gold-ivory, pops on both green and ivory squares */
+    --chess-piece-white: oklch(0.97 0.08 88);
+    /* Black pieces: rich deep navy-indigo, clearly distinct from dark green squares */
+    --chess-piece-black: oklch(0.20 0.10 258);
+    --chess-light-text: oklch(0.40 0.09 145);
+    --chess-dark-text: oklch(0.92 0.02 110);
+    /* Last move highlight color — warm amber tint */
+    --chess-last-move: oklch(0.82 0.14 75);
+
+    /* Shadcn tokens - dark theme for chess */
+    --radius: 0.25rem;
+    --background: 0.14 0.018 45;
+    --foreground: 0.88 0.03 75;
+    --card: 0.18 0.02 45;
+    --card-foreground: 0.88 0.03 75;
+    --popover: 0.18 0.02 45;
+    --popover-foreground: 0.88 0.03 75;
+    --primary: 0.78 0.12 75;
+    --primary-foreground: 0.14 0.018 45;
+    --secondary: 0.25 0.03 45;
+    --secondary-foreground: 0.88 0.03 75;
+    --muted: 0.22 0.02 45;
+    --muted-foreground: 0.55 0.03 60;
+    --accent: 0.72 0.14 85;
+    --accent-foreground: 0.14 0.018 45;
+    --destructive: 0.55 0.18 25;
+    --destructive-foreground: 0.95 0.02 75;
+    --border: 0.32 0.04 45;
+    --input: 0.25 0.03 45;
+    --ring: 0.78 0.12 75;
+    --chart-1: 0.78 0.12 75;
+    --chart-2: 0.65 0.1 160;
+    --chart-3: 0.55 0.12 250;
+    --chart-4: 0.7 0.14 30;
+    --chart-5: 0.6 0.1 300;
+    --sidebar: 0.18 0.02 45;
+    --sidebar-foreground: 0.88 0.03 75;
+    --sidebar-primary: 0.78 0.12 75;
+    --sidebar-primary-foreground: 0.14 0.018 45;
+    --sidebar-accent: 0.25 0.03 45;
+    --sidebar-accent-foreground: 0.88 0.03 75;
+    --sidebar-border: 0.32 0.04 45;
+    --sidebar-ring: 0.78 0.12 75;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'EB Garamond', Georgia, serif;
+    background-color: var(--chess-bg);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .chess-square {
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.1s ease;
+  }
+
+  .chess-square:hover {
+    filter: brightness(1.12);
+  }
+
+  .chess-piece {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: transform 0.1s ease;
+  }
+
+  .chess-square:hover .chess-piece {
+    transform: scale(1.08);
+  }
+
+  .chess-board-container {
+    position: relative;
+  }
+
+  .font-chess {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  /* Last move highlight — warm amber tint layered over the square */
+  .last-move-highlight {
+    background: rgba(212, 175, 55, 0.28);
+    pointer-events: none;
+  }
+
+  /* AI thinking animated dots */
+  .thinking-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+
+  .thinking-dot-2 {
+    animation-delay: 0.2s;
+  }
+
+  .thinking-dot-3 {
+    animation-delay: 0.4s;
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
